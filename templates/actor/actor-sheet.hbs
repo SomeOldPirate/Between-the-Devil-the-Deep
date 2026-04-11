@@ -1,0 +1,355 @@
+<form class="{{cssClass}} bdnd-pc-sheet" autocomplete="off">
+
+  {{!-- ══ HEADER ══════════════════════════════════════════════════════ --}}
+  <header class="pc-header">
+    <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" class="actor-portrait pc-portrait"/>
+    <div class="pc-header-details">
+      <div class="charname">
+        <input name="name" type="text" value="{{actor.name}}" placeholder="Captain's Name"/>
+      </div>
+      <div class="drive-row flexrow">
+        <label class="drive-label">Drive:</label>
+        {{#if driveItem}}
+          <div class="item drive-slot" data-item-id="{{driveItem._id}}"
+               title="{{stripHTML driveItem.system.description}}">
+            <span class="drive-name">{{driveItem.name}}</span>
+            <a class="item-delete drive-delete" title="Remove Drive"><i class="fas fa-times"></i></a>
+          </div>
+        {{else}}
+          <div class="drive-placeholder">Drop a Drive item here…</div>
+        {{/if}}
+      </div>
+    </div>
+  </header>
+
+  {{!-- ══ APPROACHES — STAMPED LEDGER PANEL ═══════════════════════════ --}}
+  <div class="ledger-panel">
+    <div class="ledger-grid">
+      {{#each approachList as |approach|}}
+      <div class="ledger-col">
+        <span class="ledger-lbl">{{approach.label}}</span>
+        <div class="ledger-rtg-row">
+          <span class="ledger-rtg-label">Rtg</span>
+          <input type="number" name="system.approaches.{{approach.key}}.rating"
+                 value="{{approach.rating}}" class="ledger-rtg-input"/>
+        </div>
+        <div class="approach-pips" title="Pool: {{approach.pool}} / {{approach.rating}}">
+          {{#each approach.pips as |pip|}}
+            <span class="pip {{#if pip.full}}pip-full{{else}}pip-empty{{/if}}"></span>
+          {{/each}}
+          {{#if (eq approach.rating 0)}}
+            <span class="approach-unrated">—</span>
+          {{/if}}
+        </div>
+        <input type="number" name="system.approaches.{{approach.key}}.value"
+               value="{{approach.pool}}" class="approach-pool-input ledger-pool"/>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
+  {{!-- ══ RISK COUNTERS ══════════════════════════════════════════════ --}}
+  <div class="pc-counters-row">
+
+    <div class="pc-counter health-counter">
+      <div class="pc-counter-head">
+        <span class="pc-counter-lbl"><i class="fas fa-heartbeat"></i> Health Risk</span>
+        <span class="pc-counter-nums">
+          <input type="number" name="system.health.value" value="{{system.health.value}}" class="counter-val-input"/>
+          <span class="counter-sep">/</span>
+          <span class="counter-max-display" title="Base: {{system.health.base}} + Cherry bonuses">{{system.health.max}}</span>
+          <input type="number" name="system.health.base" value="{{system.health.base}}" class="counter-base-input" title="Edit base max"/>
+        </span>
+      </div>
+      <div class="pc-counter-bar-wrap">
+        <div class="pc-counter-bar health-bar"
+             style="width:{{healthPct}}%;max-width:100%"></div>
+      </div>
+      <button type="button" class="roll-clutch pc-counter-btn">Clutch Test</button>
+    </div>
+
+    <div class="pc-counter stab-counter">
+      <div class="pc-counter-head">
+        <span class="pc-counter-lbl"><i class="fas fa-brain"></i> Stability Risk</span>
+        <span class="pc-counter-nums">
+          <input type="number" name="system.stability.value" value="{{system.stability.value}}" class="counter-val-input"/>
+          <span class="counter-sep">/</span>
+          <span class="counter-max-display" title="Base: {{system.stability.base}} + Cherry bonuses">{{system.stability.max}}</span>
+          <input type="number" name="system.stability.base" value="{{system.stability.base}}" class="counter-base-input" title="Edit base max"/>
+        </span>
+      </div>
+      <div class="pc-counter-bar-wrap">
+        <div class="pc-counter-bar stab-bar"
+             style="width:{{stabilityPct}}%;max-width:100%"></div>
+      </div>
+      <button type="button" class="roll-stability pc-counter-btn">Stability Test</button>
+    </div>
+
+    <div class="pc-block-box">
+      <span class="pc-block-lbl"><i class="fas fa-shield-alt"></i> Block</span>
+      <span class="pc-block-val">{{totalBlock}}</span>
+    </div>
+
+  </div>
+
+  {{!-- ══ CONDITIONS ══════════════════════════════════════════════════ --}}
+  <div class="sp">
+    <span class="sp-title">Conditions
+      <span class="condition-counts">
+        ({{physicalConditions}} phys / {{mentalConditions}} mental
+        {{#if (gte physicalConditions 2)}}<span class="condition-limit-warn">⚠ Limit!</span>{{/if}}
+        {{#if (gte mentalConditions 2)}}<span class="condition-limit-warn">⚠ Limit!</span>{{/if}}
+        )
+      </span>
+    </span>
+    {{#if conditions.length}}
+    <ul class="conditions-list">
+      {{#each conditions as |item|}}
+      <li class="condition-tag {{item.system.conditionType}}" data-item-id="{{item._id}}">
+        <span class="condition-name">{{item.name}}</span>
+        <span class="condition-approach">(−1 {{item.system.approach}})</span>
+        <a class="item-edit condition-edit" title="Edit"><i class="fas fa-edit"></i></a>
+        <a class="item-delete condition-delete" title="Remove"><i class="fas fa-times"></i></a>
+      </li>
+      {{/each}}
+    </ul>
+    {{/if}}
+    <a class="item-create add-condition-btn" data-type="condition"><i class="fas fa-plus"></i> Add Condition</a>
+  </div>
+
+  {{!-- ══ TABS ════════════════════════════════════════════════════════ --}}
+  <nav class="sheet-tabs tabs" data-group="primary">
+    <a class="item" data-tab="general">General</a>
+    <a class="item" data-tab="investigative">Investigative</a>
+    <a class="item" data-tab="inventory">Inventory</a>
+    <a class="item" data-tab="notes">Log</a>
+  </nav>
+
+  <section class="sheet-body">
+
+    {{!-- ── GENERAL TAB ────────────────────────────────────────────── --}}
+    <div class="tab general" data-group="primary" data-tab="general">
+
+      <div class="tab-toolbar flexrow">
+        <a class="toggle-abilities"><i class="fas fa-eye"></i>
+          {{#if showAllAbilities}}Hide Unrated{{else}}Show All Skills{{/if}}
+        </a>
+        <a class="roll-contest"><i class="fas fa-swords"></i> Contest</a>
+        <a class="roll-cooperation"><i class="fas fa-people-carry"></i> Cooperate</a>
+        <a class="refresh-event"><i class="fas fa-undo"></i> Refresh</a>
+        <span class="bp-display" title="Build Points available for advancement">BP: {{system.build_points.value}}</span>
+      </div>
+
+      {{#if (eq generalAbilities.length 0)}}
+      <p class="empty-hint">No abilities rated — click <em>Show All Skills</em> to view and assign ratings.</p>
+      {{/if}}
+
+      <div class="sp sp-abilities"><span class="sp-title">General Abilities</span>
+      <table class="ability-table">
+        <thead>
+          <tr><th>Ability</th><th>Rating</th><th>Pool</th><th></th></tr>
+        </thead>
+        <tbody>
+          {{#each generalAbilities as |ability|}}
+          <tr>
+            <td><a class="roll-general ability-roll-label" data-key="{{ability.key}}">{{ability.label}}</a></td>
+            <td><input type="number" name="system.abilities.general.{{ability.key}}.rating" value="{{ability.rating}}"/></td>
+            <td><input type="number" name="system.abilities.general.{{ability.key}}.value"  value="{{ability.value}}" class="pool-input"/></td>
+            <td>{{#if ../system.build_points.value}}<a class="raise-rating" data-type="general" data-key="{{ability.key}}" title="Spend 1 Build Point to raise {{ability.label}} Rating"><i class="fas fa-arrow-up"></i></a>{{/if}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      </div>
+
+      {{!-- CHERRIES ──────────────────────────────────────────────── --}}
+      <div class="sp">
+        <span class="sp-title">★ Cherries <a class="item-create sp-add" data-type="cherry"><i class="fas fa-plus"></i></a></span>
+      {{#if cherries.length}}
+      <ul class="item-list cherry-list">
+        {{#each cherries as |item|}}
+        <li class="item flexrow cherry-item" data-item-id="{{item._id}}">
+          <span class="cherry-star">★</span>
+          <div class="cherry-details">
+            <span class="cherry-name">{{item.name}}</span>
+            <span class="cherry-ability">({{item.system.abilityLabel}})</span>
+            {{#if item.system.health_max_bonus}}<span class="cherry-badge health-badge">+{{item.system.health_max_bonus}} Health Max</span>{{/if}}
+            {{#if item.system.stability_max_bonus}}<span class="cherry-badge stability-badge">+{{item.system.stability_max_bonus}} Stability Max</span>{{/if}}
+            {{#if item.system.has_post_roll_spend}}<span class="cherry-badge post-roll-badge">Post-roll spend</span>{{/if}}
+          </div>
+          <div class="item-controls">
+            <a class="item-edit" title="Edit"><i class="fas fa-edit"></i></a>
+            <a class="item-delete" title="Remove"><i class="fas fa-trash"></i></a>
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+      {{else}}
+      <p class="empty-hint">No Cherries yet — abilities with Rating ≥ 5 may have one.</p>
+      {{/if}}
+      </div>
+
+    </div>
+
+    {{!-- ── INVESTIGATIVE TAB ───────────────────────────────────────── --}}
+    <div class="tab investigative" data-group="primary" data-tab="investigative">
+
+      <div class="tab-toolbar flexrow">
+        <a class="toggle-abilities"><i class="fas fa-eye"></i>
+          {{#if showAllAbilities}}Hide Unrated{{else}}Show All Skills{{/if}}
+        </a>
+        <a class="lore-refresh-all"><i class="fas fa-undo"></i> Untap All Lore Sheets</a>
+        <span class="bp-display" title="Build Points available for advancement">BP: {{system.build_points.value}}</span>
+      </div>
+
+      {{#if (eq investigativeAbilities.length 0)}}
+      <p class="empty-hint">No investigative abilities rated — click <em>Show All Skills</em> to assign ratings.</p>
+      {{/if}}
+
+      <div class="sp sp-abilities">
+        <span class="sp-title">Investigative Abilities</span>
+        <table class="ability-table">
+          <thead>
+            <tr><th>Ability</th><th>Rating</th><th>Pool</th><th></th></tr>
+          </thead>
+          <tbody>
+            {{#each investigativeAbilities as |ability|}}
+            <tr>
+              <td><a class="spend-investigative ability-roll-label" data-key="{{ability.key}}">{{ability.label}}</a></td>
+              <td><input type="number" name="system.abilities.investigative.{{ability.key}}.rating" value="{{ability.rating}}"/></td>
+              <td><input type="number" name="system.abilities.investigative.{{ability.key}}.value"  value="{{ability.value}}" class="pool-input"/></td>
+              <td>
+                {{#if (eq ability.key "reassurance")}}<a class="spend-reassurance" title="Spend Reassurance to reduce a character's Stability Counter"><i class="fas fa-heart"></i></a>{{/if}}
+                {{#if ../system.build_points.value}}<a class="raise-rating" data-type="investigative" data-key="{{ability.key}}" title="Spend 1 Build Point to raise {{ability.label}} Rating"><i class="fas fa-arrow-up"></i></a>{{/if}}
+              </td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sp">
+        <span class="sp-title">Lore Sheets <a class="item-create sp-add" data-type="lore_sheet"><i class="fas fa-plus"></i></a></span>
+        <ul class="item-list lore-list">
+          {{#each loreSheets as |item|}}
+          <li class="item flexrow lore-item {{#if item.system.resolved}}lore-resolved{{/if}}" data-item-id="{{item._id}}">
+            <div class="lore-status">
+              {{#if item.system.resolved}}<span class="lore-badge resolved" title="Resolved">✓</span>
+              {{else if item.system.tapped}}<span class="lore-badge tapped" title="Tapped">◉</span>
+              {{else}}<span class="lore-badge fresh" title="Available">○</span>{{/if}}
+            </div>
+            <h4 class="item-name">{{item.name}}</h4>
+            <div class="item-controls lore-controls">
+              <a class="lore-toggle" title="{{#if item.system.tapped}}Untap{{else}}Tap{{/if}}">
+                <i class="fas {{#if item.system.tapped}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i>
+              </a>
+              <a class="lore-resolve" title="{{#if item.system.resolved}}Un-resolve{{else}}Resolve{{/if}}"><i class="fas fa-flag"></i></a>
+              <a class="item-edit"><i class="fas fa-edit"></i></a>
+              <a class="item-delete"><i class="fas fa-trash"></i></a>
+            </div>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+
+    </div>
+
+    {{!-- ── INVENTORY TAB ────────────────────────────────────────────── --}}
+    <div class="tab inventory" data-group="primary" data-tab="inventory">
+
+      <div class="wealth-row">
+        <label><i class="fas fa-coins"></i> Coin:</label>
+        <input type="number" name="system.coin.value" value="{{system.coin.value}}" class="coin-input"/>
+        <label>Build Points:</label>
+        <input type="number" name="system.build_points.value" value="{{system.build_points.value}}" class="bp-input"/>
+      </div>
+
+      <div class="pc-section-rule">
+        <span><i class="fas fa-sword"></i> Weapons</span>
+        <a class="item-create pc-add-link" data-type="weapon"><i class="fas fa-plus"></i></a>
+      </div>
+      <ul class="item-list">
+        {{#each weapons as |item|}}
+        <li class="item flexrow" data-item-id="{{item._id}}">
+          <h4 class="item-name">
+            <a class="roll-weapon-attack">{{item.name}}</a>
+            <span class="weapon-meta">+{{item.system.bonus}} dmg · {{item.system.range}}{{#if item.system.ammo.max}} · {{item.system.ammo.value}}/{{item.system.ammo.max}} ammo{{/if}}</span>
+          </h4>
+          <div class="item-controls">
+            <a class="roll-damage" title="Roll Damage"><i class="fas fa-dice-d6"></i></a>
+            <a class="reload-weapon" title="Reload"><i class="fas fa-redo"></i></a>
+            <a class="item-edit"><i class="fas fa-edit"></i></a>
+            <a class="item-delete"><i class="fas fa-trash"></i></a>
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+
+      <div class="pc-section-rule">
+        <span><i class="fas fa-shield-alt"></i> Armour</span>
+        <a class="item-create pc-add-link" data-type="armor"><i class="fas fa-plus"></i></a>
+      </div>
+      <ul class="item-list">
+        {{#each armors as |item|}}
+        <li class="item flexrow" data-item-id="{{item._id}}">
+          <h4 class="item-name">
+            {{item.name}}
+            <span class="weapon-meta">Block {{item.system.block}}{{#unless item.system.equipped}} (stowed){{/unless}}</span>
+          </h4>
+          <div class="item-controls">
+            <a class="toggle-equip" title="{{#if item.system.equipped}}Unequip{{else}}Equip{{/if}}">
+              <i class="fas {{#if item.system.equipped}}fa-shield-alt{{else}}fa-shield{{/if}}"></i>
+            </a>
+            <a class="item-edit"><i class="fas fa-edit"></i></a>
+            <a class="item-delete"><i class="fas fa-trash"></i></a>
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+
+      <div class="pc-section-rule">
+        <span><i class="fas fa-hat-wizard"></i> Spells &amp; Rituals</span>
+        <a class="item-create pc-add-link" data-type="spell"><i class="fas fa-plus"></i></a>
+      </div>
+      <ul class="item-list">
+        {{#each spells as |item|}}
+        <li class="item flexrow" data-item-id="{{item._id}}">
+          <h4 class="item-name">
+            <a class="cast-spell">{{item.name}}</a>
+            <span class="weapon-meta">Level {{item.system.level}}</span>
+          </h4>
+          <div class="item-controls">
+            <a class="item-edit"><i class="fas fa-edit"></i></a>
+            <a class="item-delete"><i class="fas fa-trash"></i></a>
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+
+      <div class="pc-section-rule">
+        <span><i class="fas fa-sack"></i> Sundry Items</span>
+        <a class="item-create pc-add-link" data-type="item"><i class="fas fa-plus"></i></a>
+      </div>
+      <ul class="item-list">
+        {{#each inventory as |item|}}
+        <li class="item flexrow" data-item-id="{{item._id}}">
+          <h4 class="item-name">{{item.name}}</h4>
+          <div class="item-controls">
+            <a class="item-edit"><i class="fas fa-edit"></i></a>
+            <a class="item-delete"><i class="fas fa-trash"></i></a>
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+
+    </div>
+
+    {{!-- ── LOG TAB ──────────────────────────────────────────────────── --}}
+    <div class="tab notes" data-group="primary" data-tab="notes">
+      <div class="pc-section-rule"><span>Captain's Personal Log</span></div>
+      <textarea name="system.biography" class="biography-field"
+                placeholder="Record your exploits, debts, enemies, and ill-gotten gains…">{{system.biography}}</textarea>
+    </div>
+
+  </section>
+</form>

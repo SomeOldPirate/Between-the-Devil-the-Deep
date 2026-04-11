@@ -1,0 +1,182 @@
+<form class="{{cssClass}}" autocomplete="off">
+    <header class="sheet-header">
+        <img src="{{item.img}}" data-edit="img" title="{{item.name}}"/>
+        <div class="header-details">
+            <h1><input name="name" type="text" value="{{item.name}}" placeholder="Item Name"/></h1>
+        </div>
+    </header>
+
+    <div class="sheet-content">
+        {{#if (eq item.type "weapon")}}
+            <div class="form-group">
+                <label>Governing Ability</label>
+                <select name="system.ability">
+                    {{#select system.ability}}
+                    <option value="weapons">Weapons (Melee)</option>
+                    <option value="firearms">Firearms (Guns)</option>
+                    <option value="athletics">Athletics (Throwing)</option>
+                    <option value="scuffling">Scuffling (Unarmed)</option>
+                    <option value="artillery">Artillery (Cannons)</option>
+                    {{/select}}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Damage Bonus</label>
+                <input type="number" name="system.bonus" value="{{system.bonus}}" placeholder="0"/>
+            </div>
+
+            <div class="form-group">
+                <label>Range</label>
+                <select name="system.range">
+                    {{#select system.range}}
+                    <option value="Close">Close (Melee)</option>
+                    <option value="Point Blank">Point Blank (Pistol)</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Long">Long</option>
+                    {{/select}}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Ammo Capacity</label>
+                <div class="flexrow">
+                    <input type="number" name="system.ammo.value" value="{{system.ammo.value}}" title="Current Ammo"/>
+                    <span class="sep" style="flex: 0 0 10px; text-align: center;"> / </span>
+                    <input type="number" name="system.ammo.max" value="{{system.ammo.max}}" title="Max Ammo"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Equipped?</label>
+                <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
+            </div>
+
+            <div class="form-group">
+                <label>Weapon Notes <span class="field-hint">(special rules, qualities)</span></label>
+                <input type="text" name="system.notes" value="{{system.notes}}"
+                       placeholder="e.g. Reliable, Two-handed, Boarding weapon…"/>
+            </div>
+        {{/if}}
+
+        {{#if (eq item.type "spell")}}
+            <div class="form-group">
+                <label>Spell Level</label>
+                <select name="system.level">
+                    {{#select system.level}}
+                    <option value="1">1 — Cantrip</option>
+                    <option value="2">2 — Minor</option>
+                    <option value="3">3 — Major</option>
+                    <option value="4">4 — Greater</option>
+                    <option value="5">5 — Ritual</option>
+                    {{/select}}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Default Cast TN <span class="field-hint">(pre-filled in cast dialog)</span></label>
+                <input type="number" name="system.target_tn" value="{{system.target_tn}}"
+                       min="2" max="15" placeholder="5"/>
+            </div>
+        {{/if}}
+
+        {{#if (eq item.type "armor")}}
+            <div class="form-group">
+                <label>Block Rating</label>
+                <input type="number" name="system.block" value="{{system.block}}" placeholder="0"/>
+            </div>
+            <div class="form-group">
+                <label>Equipped?</label>
+                <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
+            </div>
+        {{/if}}
+
+        {{#if (eq item.type "condition")}}
+            <div class="form-group">
+                <label>Condition Type</label>
+                <select name="system.conditionType">
+                    {{#select system.conditionType}}
+                    <option value="physical">Physical</option>
+                    <option value="mental">Mental</option>
+                    {{/select}}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Affected Approach</label>
+                <select name="system.approach">
+                    {{#select system.approach}}
+                    <option value="forceful">Forceful</option>
+                    <option value="slick">Slick</option>
+                    <option value="flashy">Flashy</option>
+                    <option value="agile">Agile</option>
+                    <option value="focused">Focused</option>
+                    <option value="deceptive">Deceptive</option>
+                    {{/select}}
+                </select>
+            </div>
+        {{/if}}
+
+        {{#if (eq item.type "lore_sheet")}}
+            <div class="form-group">
+                <label>Status</label>
+                <div class="flexrow">
+                    <label><input type="checkbox" name="system.tapped" {{checked system.tapped}}/> Tapped</label>
+                    <label><input type="checkbox" name="system.resolved" {{checked system.resolved}}/> Resolved</label>
+                </div>
+            </div>
+        {{/if}}
+
+        {{#if (eq item.type "drive")}}
+            <h2 style="font-family: 'IM Fell English SC', serif; border-bottom: 1px solid #5a3d2b;">The Call of the Sea</h2>
+            <p class="notes" style="font-style: italic; color: #666; margin-bottom: 10px;">Define the core motivation that drives this character forward.</p>
+        {{/if}}
+
+        {{#if (eq item.type "cherry")}}
+            <div class="form-group">
+                <label>Parent Ability</label>
+                <select name="system.ability" style="width:100%;">
+                    {{#select system.ability}}
+                    <option value="artillery">Artillery</option>
+                    <option value="athletics">Athletics</option>
+                    <option value="burglary">Burglary</option>
+                    <option value="business_affairs">Business Affairs</option>
+                    <option value="disguise">Disguise</option>
+                    <option value="filch">Filch</option>
+                    <option value="firearms">Firearms</option>
+                    <option value="gambling">Gambling</option>
+                    <option value="navigation">Navigation</option>
+                    <option value="riding">Riding</option>
+                    <option value="scuffling">Scuffling</option>
+                    <option value="seamanship">Seamanship</option>
+                    <option value="sense_trouble">Sense Trouble</option>
+                    <option value="spell_casting">Spell Casting</option>
+                    <option value="stealth">Stealth</option>
+                    <option value="swimming">Swimming</option>
+                    <option value="tinkering">Tinkering</option>
+                    <option value="traps_bombs">Traps & Bombs</option>
+                    <option value="weapons">Weapons</option>
+                    {{/select}}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Health Risk Counter Max Bonus <span class="field-hint">(0 if none)</span></label>
+                <input type="number" name="system.health_max_bonus" value="{{system.health_max_bonus}}" min="0" max="10"/>
+            </div>
+            <div class="form-group">
+                <label>Stability Risk Counter Max Bonus <span class="field-hint">(0 if none)</span></label>
+                <input type="number" name="system.stability_max_bonus" value="{{system.stability_max_bonus}}" min="0" max="10"/>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="system.has_post_roll_spend" {{checked system.has_post_roll_spend}}/>
+                    Post-roll spend? <span class="field-hint">(spend 2 after test for +1 — shown in roll dialog)</span>
+                </label>
+            </div>
+        {{/if}}
+
+        <div class="form-group">
+            <label style="font-family: 'IM Fell English SC', serif; font-size: 1.1em; border-bottom: 1px solid #5a3d2b; display: block; margin-top: 10px;">Description / Rules</label>
+            <textarea name="system.description" 
+                      style="width: 100%; min-height: 180px; background: rgba(255, 255, 255, 0.2); border: 1px dashed #8c6d53; font-family: 'Crimson Text', serif; padding: 10px; resize: vertical;">{{system.description}}</textarea>
+        </div>
+    </div>
+</form>

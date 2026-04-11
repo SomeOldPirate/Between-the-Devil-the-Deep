@@ -1,0 +1,1473 @@
+/* ============================================================
+   BD&D — Between the Devil and the Deep
+   Foundry VTT System Stylesheet
+   Theme: 18th Century Pirate / Weathered Parchment
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&family=IM+Fell+English+SC&display=swap');
+
+/* ── Window Base ───────────────────────────────────────────── */
+
+.system-bdnd .window-app.bdnd .window-content,
+.vtt .window-app.bdnd .window-content {
+  background: #f4ecd8;
+  background-image: radial-gradient(circle, #f9f4e8 20%, #ebdcb3 100%);
+  color: #3e2b1d;
+  font-family: 'Crimson Text', 'Book Antiqua', Palatino, serif;
+  font-size: 16px;
+  padding: 10px 12px 12px !important;
+  overflow-y: auto;
+}
+
+/* Ensure the sheet form itself doesn't add extra top margin */
+.bdnd.bdnd-pc-sheet,
+.bdnd form.bdnd-pc-sheet {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+/* ── Typography ────────────────────────────────────────────── */
+
+.bdnd h1, .bdnd h2, .bdnd h3, .bdnd h4 {
+  font-family: 'IM Fell English SC', serif;
+  border-bottom: 2px solid #5a3d2b;
+  color: #2c1e16;
+  margin-bottom: 5px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.bdnd h1 { font-size: 2.2em; border-bottom: 3px double #5a3d2b; }
+.bdnd h2 { font-size: 1.8em; }
+.bdnd h3 { font-size: 1.4em; border-bottom: 1px solid #8c6d53; }
+.bdnd h4 { font-size: 1.1em; border-bottom: none; }
+
+/* ── Inputs ────────────────────────────────────────────────── */
+
+.bdnd input[type="text"],
+.bdnd input[type="number"],
+.bdnd select {
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed #8c6d53;
+  border-radius: 0;
+  color: #2c1e16;
+  font-family: 'Crimson Text', serif;
+  font-size: 1em;
+}
+
+.bdnd input:focus, .bdnd select:focus {
+  box-shadow: none;
+  border-bottom: 2px solid #8b0000;
+  outline: none;
+}
+
+/* ══ PC SHEET ════════════════════════════════════════════════════ */
+
+/* ── Header ─────────────────────────────────────────────────── */
+
+.bdnd .pc-header {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 3px double #5a3d2b;
+  overflow: hidden;
+}
+
+.bdnd .pc-portrait {
+  width: 108px;
+  height: 108px;
+  min-width: 108px;
+  object-fit: cover;
+  border: 3px solid #5a3d2b;
+  border-radius: 4px;
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.4);
+  background: #2c1e16;
+  flex-shrink: 0;
+}
+
+.bdnd .pc-header-details { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+
+.bdnd .charname {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+  width: 100%;
+}
+.bdnd .charname input {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.6em;
+  font-weight: bold;
+  color: #8b0000;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  letter-spacing: 0.5px;
+  display: block;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Drive row */
+.bdnd .drive-row { align-items: center; margin-top: 4px; }
+.bdnd .drive-label {
+  flex: 0 0 52px;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1em;
+  color: #5a3d2b;
+  font-weight: bold;
+}
+.bdnd .drive-slot {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: rgba(90,61,43,0.08);
+  border: 1px dashed #5a3d2b;
+  border-radius: 3px;
+  padding: 3px 8px;
+  cursor: help;
+}
+.bdnd .drive-slot:hover { background: rgba(90,61,43,0.18); }
+.bdnd .drive-name {
+  font-family: 'Crimson Text', serif;
+  font-weight: 600;
+  font-size: 1.05em;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bdnd .drive-delete { margin-left: 8px; color: #8b0000; font-size: 0.8em; }
+.bdnd .drive-placeholder {
+  flex: 1;
+  border: 1px dashed #8c6d53;
+  border-radius: 3px;
+  color: #8c6d53;
+  text-align: center;
+  font-style: italic;
+  padding: 3px;
+}
+
+/* ── Approaches — Stamped Ledger Panel ───────────────────────── */
+
+.bdnd .ledger-panel {
+  position: relative;
+  background: #eee0c0;
+  border: 2px solid #5a3d2b;
+  border-radius: 3px;
+  padding: 10px 10px 8px;
+  margin-bottom: 11px;
+  /* inner double-rule effect */
+  box-shadow:
+    inset 0 0 0 3px #f5edd8,
+    inset 0 0 0 5px rgba(90,61,43,0.25);
+}
+
+/* Stamped title centred over the top border */
+.bdnd .ledger-panel::before {
+  content: 'Approaches & Methods';
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f5edd8;
+  padding: 0 12px;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.75em;
+  color: #5a3d2b;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+.bdnd .ledger-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+}
+
+.bdnd .ledger-col {
+  text-align: center;
+  padding: 0 4px 4px;
+  border-right: 1px dashed rgba(90,61,43,0.3);
+}
+.bdnd .ledger-col:last-child { border-right: none; }
+
+.bdnd .ledger-lbl {
+  display: block;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.72em;
+  color: #3e2b1d;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.bdnd .ledger-rtg-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-bottom: 1px solid rgba(90,61,43,0.2);
+  padding-bottom: 3px;
+  margin-bottom: 3px;
+}
+.bdnd .ledger-rtg-label {
+  font-size: 0.65em;
+  color: #8c6d53;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.bdnd .ledger-rtg-input {
+  width: 30px !important;
+  text-align: center;
+  font-size: 1em;
+  font-weight: bold;
+  border-bottom: none !important;
+  padding: 0;
+}
+
+/* Pips */
+.bdnd .approach-pips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 2px 2px;
+  min-height: 20px;
+}
+.bdnd .pip {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid #5a3d2b;
+}
+.bdnd .pip.pip-full  { background: #8b0000; border-color: #8b0000; }
+.bdnd .pip.pip-empty { background: transparent; }
+.bdnd .approach-unrated { font-size: 0.8em; color: #c2b59b; }
+
+/* Pool input — sits below pips */
+.bdnd .ledger-pool,
+.bdnd .approach-pool-input {
+  display: block;
+  width: 38px !important;
+  margin: 2px auto 0;
+  text-align: center;
+  font-size: 0.85em;
+  font-weight: bold;
+  color: #8b0000;
+  background: rgba(139,0,0,0.05) !important;
+  border: 1px dashed rgba(90,61,43,0.4) !important;
+  border-radius: 3px;
+  padding: 1px 3px;
+}
+
+/* ── Risk Counters ────────────────────────────────────────────── */
+
+.bdnd .pc-counters-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.bdnd .pc-counter {
+  border-radius: 4px;
+  overflow: hidden;
+  border: 2px solid transparent;
+}
+.bdnd .health-counter { border-color: #8b0000; }
+.bdnd .stab-counter   { border-color: #1a3a7a; }
+
+.bdnd .pc-counter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  color: #f5edd8;
+}
+.bdnd .health-counter .pc-counter-head { background: #8b0000; }
+.bdnd .stab-counter   .pc-counter-head { background: #1a3a7a; }
+
+.bdnd .pc-counter-lbl {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.9em;
+  letter-spacing: 0.3px;
+}
+
+.bdnd .pc-counter-nums {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.bdnd .counter-val-input,
+.bdnd .counter-max-input {
+  background: rgba(255,255,255,0.2) !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255,255,255,0.5) !important;
+  color: #f5edd8 !important;
+  font-size: 1.15em;
+  font-weight: bold;
+  width: 34px;
+  text-align: center;
+  padding: 0;
+}
+.bdnd .counter-sep { color: rgba(255,255,255,0.6); font-size: 0.9em; }
+
+/* Derived max shown prominently; base editable in small input beside it */
+.bdnd .counter-max-display {
+  font-size: 1.15em;
+  font-weight: bold;
+  color: #f5edd8;
+  min-width: 24px;
+  text-align: center;
+  cursor: help;
+}
+.bdnd .counter-base-input {
+  background: rgba(255,255,255,0.1) !important;
+  border: none !important;
+  border-bottom: 1px dashed rgba(255,255,255,0.35) !important;
+  color: rgba(255,255,255,0.5) !important;
+  font-size: 0.72em;
+  width: 22px;
+  text-align: center;
+  padding: 0;
+  margin-left: 2px;
+  align-self: flex-end;
+  margin-bottom: 1px;
+}
+
+.bdnd .pc-counter-bar-wrap {
+  height: 6px;
+  background: rgba(0,0,0,0.2);
+}
+.bdnd .pc-counter-bar {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+.bdnd .health-bar { background: linear-gradient(to right, #600000, #cc3333); }
+.bdnd .stab-bar   { background: linear-gradient(to right, #0a1f5a, #2255cc); }
+
+.bdnd .pc-counter-btn {
+  display: block;
+  width: 100%;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.88em;
+  padding: 3px 4px;
+  border: none;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  cursor: pointer;
+  background: rgba(255,255,255,0.25);
+  transition: background 0.15s;
+}
+.bdnd .health-counter .pc-counter-btn { color: #8b0000; background: #fdf0f0; }
+.bdnd .stab-counter   .pc-counter-btn { color: #1a3a7a; background: #f0f0fd; }
+.bdnd .pc-counter-btn:hover { filter: brightness(0.93); }
+
+/* Block box */
+.bdnd .pc-block-box {
+  border: 2px solid #5a3d2b;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  text-align: center;
+}
+.bdnd .pc-block-lbl {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.85em;
+  color: #5a3d2b;
+  display: block;
+  border-bottom: 1px solid rgba(90,61,43,0.3);
+  width: 100%;
+  text-align: center;
+  padding-bottom: 3px;
+  margin-bottom: 4px;
+}
+.bdnd .pc-block-val {
+  font-size: 2em;
+  font-weight: bold;
+  font-family: 'IM Fell English SC', serif;
+  color: #3e2b1d;
+  line-height: 1;
+}
+
+/* ── Conditions Banner ────────────────────────────────────────── */
+
+.bdnd .conditions-banner {
+  background: rgba(139,0,0,0.05);
+  border: 1px solid rgba(139,0,0,0.35);
+  border-radius: 4px;
+  padding: 5px 10px;
+  margin-bottom: 8px;
+}
+.bdnd .conditions-heading {
+  font-family: 'IM Fell English SC', serif;
+  font-weight: bold;
+  color: #8b0000;
+  font-size: 0.95em;
+  display: block;
+  margin-bottom: 3px;
+}
+.bdnd .condition-counts { font-size: 0.82em; font-weight: normal; color: #5a3d2b; }
+.bdnd .condition-limit-warn { color: darkred; font-weight: bold; margin-left: 4px; }
+.bdnd .conditions-list {
+  list-style: none;
+  padding: 0;
+  margin: 3px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.bdnd .condition-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.65);
+  border: 1px solid #c2b59b;
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 0.88em;
+}
+.bdnd .condition-tag.physical { border-color: #8b0000; }
+.bdnd .condition-tag.mental   { border-color: #1a3a7a; }
+.bdnd .condition-approach { color: #888; font-size: 0.82em; }
+.bdnd .condition-edit,
+.bdnd .condition-delete { color: #5a3d2b; font-size: 0.78em; cursor: pointer; }
+.bdnd .condition-delete:hover { color: #8b0000; }
+.bdnd .add-condition-btn {
+  font-size: 0.82em;
+  color: #5a3d2b;
+  cursor: pointer;
+  display: inline-block;
+  margin-top: 3px;
+  opacity: 0.8;
+}
+.bdnd .add-condition-btn:hover { opacity: 1; color: #8b0000; }
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+
+.bdnd .sheet-tabs {
+  margin-top: 10px;
+  border-bottom: 3px solid #5a3d2b;
+}
+.bdnd .sheet-tabs .item {
+  font-family: 'IM Fell English SC', serif;
+  font-weight: bold;
+  font-size: 1.1em;
+  padding: 4px 14px;
+  background: rgba(90,61,43,0.12);
+  border: 2px solid #5a3d2b;
+  border-bottom: none;
+  border-radius: 5px 5px 0 0;
+  margin-right: 2px;
+  color: #3e2b1d;
+  cursor: pointer;
+}
+.bdnd .sheet-tabs .item.active {
+  background: #5a3d2b;
+  color: #f5edd8;
+}
+
+/* ── Tab Toolbar ─────────────────────────────────────────────── */
+
+.bdnd .tab-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+.bdnd .tab-toolbar a {
+  font-size: 0.85em;
+  color: #5a3d2b;
+  cursor: pointer;
+  padding: 2px 8px;
+  border: 1px solid #8c6d53;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.45);
+  transition: background 0.12s;
+}
+.bdnd .tab-toolbar a:hover { background: rgba(90,61,43,0.18); color: #2c1e16; }
+
+/* ── Section Rules (replaces h3 headers in tabs) ─────────────── */
+
+.bdnd .pc-section-rule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.05em;
+  color: #3e2b1d;
+  letter-spacing: 0.5px;
+  margin: 10px 0 5px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #8c6d53;
+}
+.bdnd .pc-add-link {
+  font-size: 0.7em;
+  color: #5a3d2b;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.bdnd .pc-add-link:hover { opacity: 1; color: #8b0000; }
+
+/* ── Ability Tables ──────────────────────────────────────────── */
+
+.bdnd .ability-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 2px;
+  font-size: 0.93em;
+}
+.bdnd .ability-table th {
+  background: #5a3d2b;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1em;
+  color: #f5edd8;
+  letter-spacing: 0.5px;
+  padding: 3px 6px;
+  border: 1px solid #3e2b1d;
+}
+.bdnd .ability-table td {
+  border: 1px solid #c2b59b;
+  padding: 2px 6px;
+}
+.bdnd .ability-table tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+.bdnd .ability-table tr:hover td { background: rgba(90,61,43,0.06); }
+.bdnd .pool-input {
+  background: rgba(0,0,0,0.04) !important;
+  font-weight: bold;
+  text-align: center;
+}
+.bdnd .ability-roll-label {
+  font-weight: 600;
+  color: #8b0000;
+  cursor: pointer;
+}
+.bdnd .ability-roll-label:hover { color: #cc0000; text-decoration: underline dotted; }
+.bdnd .empty-hint {
+  font-style: italic;
+  color: #8c6d53;
+  padding: 6px 0;
+  font-size: 0.9em;
+}
+
+/* ── Lore Sheets ─────────────────────────────────────────────── */
+
+.bdnd .lore-list  { margin-top: 2px; }
+.bdnd .lore-item  { align-items: center; }
+.bdnd .lore-status { flex: 0 0 22px; text-align: center; }
+.bdnd .lore-badge  { font-size: 1.1em; }
+.bdnd .lore-badge.fresh    { color: #5a3d2b; }
+.bdnd .lore-badge.tapped   { color: #8b0000; }
+.bdnd .lore-badge.resolved { color: #2a6b2a; }
+.bdnd .lore-resolved { opacity: 0.5; text-decoration: line-through; }
+.bdnd .lore-controls { flex: 0 0 100px; }
+
+/* ── Wealth / Inventory ──────────────────────────────────────── */
+
+.bdnd .wealth-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  background: rgba(184,134,11,0.07);
+  border: 1px solid rgba(184,134,11,0.35);
+  border-radius: 4px;
+}
+.bdnd .wealth-row label {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.1em;
+  color: #b8860b;
+}
+.bdnd .coin-input,
+.bdnd .bp-input {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #b8860b;
+  width: 65px;
+  text-align: center;
+  border-bottom-color: #b8860b !important;
+}
+
+/* ── Item Lists ──────────────────────────────────────────────── */
+
+.bdnd .item-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 4px;
+}
+.bdnd .item-list .item {
+  border: 1px solid #c2b59b;
+  background: rgba(255,255,255,0.4);
+  margin-bottom: 3px;
+  padding: 3px 6px;
+  align-items: center;
+  border-radius: 3px;
+}
+.bdnd .item-list .item:hover { background: rgba(255,255,255,0.75); }
+.bdnd .item-name {
+  margin: 0 0 0 4px;
+  font-weight: bold;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.05em;
+  flex: 1;
+  border: none;
+}
+.bdnd .weapon-meta {
+  font-family: 'Crimson Text', serif;
+  font-size: 0.8em;
+  font-weight: normal;
+  color: #666;
+  margin-left: 5px;
+}
+.bdnd .item-controls {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.bdnd .item-controls a { color: #5a3d2b; cursor: pointer; transition: all 0.12s; }
+.bdnd .item-controls a:hover { color: #2c1e16; transform: scale(1.15); }
+
+/* ── Cherries ────────────────────────────────────────────────── */
+
+.bdnd .cherry-list { margin-top: 2px; }
+.bdnd .cherry-item {
+  align-items: center;
+  padding: 3px 4px;
+  border-bottom: 1px dotted #c8a882;
+  gap: 6px;
+}
+.bdnd .cherry-item:last-child { border-bottom: none; }
+.bdnd .cherry-star { color: #b8860b; font-size: 1em; flex: 0 0 14px; text-align: center; }
+.bdnd .cherry-details {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.bdnd .cherry-name { font-family: 'IM Fell English SC', serif; font-size: 0.92em; color: #3a2a1a; }
+.bdnd .cherry-ability { font-size: 0.78em; color: #7a5c3a; font-style: italic; }
+.bdnd .cherry-badge {
+  font-size: 0.7em;
+  font-weight: bold;
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.bdnd .cherry-badge.health-badge    { background: #8b0000; color: #f5edd8; }
+.bdnd .cherry-badge.stability-badge { background: #1a3a7a; color: #f5edd8; }
+.bdnd .cherry-badge.post-roll-badge { background: #2a6b2a; color: #f5edd8; }
+
+/* ── Biography ───────────────────────────────────────────────── */
+
+.bdnd .biography-field {
+  width: 100%;
+  min-height: 340px;
+  background: rgba(255,255,255,0.2);
+  border: 1px dashed #8c6d53;
+  font-family: 'Crimson Text', serif;
+  font-size: 0.95em;
+  padding: 8px;
+  resize: vertical;
+  color: #3e2b1d;
+}
+
+/* ══ UNIVERSAL STAMPED PANEL ═════════════════════════════════════ */
+
+/* Core reusable component used on all three sheets */
+.bdnd .sp {
+  position: relative;
+  background: #eee0c0;
+  border: 2px solid #5a3d2b;
+  border-radius: 3px;
+  padding: 10px 10px 8px;
+  margin-bottom: 10px;
+  box-shadow:
+    inset 0 0 0 3px #f5edd8,
+    inset 0 0 0 5px rgba(90,61,43,0.22);
+}
+.bdnd .sp:last-child { margin-bottom: 0; }
+
+/* Floating stamped title over the top border */
+.bdnd .sp-title {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f5edd8;
+  padding: 0 10px;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.75em;
+  color: #5a3d2b;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Small add link inside sp-title */
+.bdnd .sp-add {
+  font-size: 0.8em;
+  color: #5a3d2b;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.bdnd .sp-add:hover { opacity: 1; color: #8b0000; }
+
+/* Toolbar inside a stamped panel */
+.bdnd .sp-toolbar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+.bdnd .sp-toolbar a {
+  font-size: 0.8em;
+  color: #5a3d2b;
+  cursor: pointer;
+  padding: 2px 7px;
+  border: 1px solid #8c6d53;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.45);
+}
+.bdnd .sp-toolbar a:hover { background: rgba(90,61,43,0.15); }
+
+/* Conditions inside a stamped panel */
+.bdnd .sp .conditions-list { margin: 3px 0; }
+.bdnd .sp .add-condition-btn { margin-top: 3px; }
+
+/* Ability tables inside stamped panels */
+.bdnd .sp .ability-table { margin-top: 4px; }
+.bdnd .sp-abilities { padding-bottom: 6px; }
+
+/* ── Advancement — Raise Rating button ──────────────────────── */
+.bdnd .raise-rating {
+  display: inline-block;
+  color: #5a8a3a;
+  font-size: 0.78em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  opacity: 0.75;
+  transition: opacity 0.15s, background 0.15s;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bdnd .raise-rating:hover {
+  opacity: 1;
+  color: #2e5a18;
+  background: rgba(90, 138, 58, 0.15);
+}
+/* keep the action column narrow */
+.bdnd .ability-table td:last-child,
+.bdnd .ability-table th:last-child {
+  width: 28px;
+  text-align: center;
+  padding: 2px 2px;
+}
+
+/* ── Build Points display in tab toolbar ─────────────────────── */
+.bdnd .bp-display {
+  margin-left: auto;
+  font-size: 0.82em;
+  font-weight: bold;
+  color: #c9a227;
+  letter-spacing: 0.02em;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(201, 162, 39, 0.1);
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  white-space: nowrap;
+}
+
+/* Trackers as stamped panels — title floats above, inner fills the frame */
+.bdnd .sp.sp-tracker {
+  padding: 0;
+  overflow: visible;
+}
+.bdnd .sp.sp-tracker .sp-title {
+  z-index: 1;
+}
+/* Push tracker content down to clear the floating title */
+.bdnd .sp.sp-tracker .tracker-inner {
+  margin-top: 4px;
+  border-radius: 0 0 2px 2px;
+  overflow: hidden;
+}
+
+/* ══ NPC SHEET ════════════════════════════════════════════════════ */
+
+.bdnd.npc .actor-portrait,
+.bdnd.npc .npc-portrait { width: 72px; height: 72px; min-width: 72px; }
+
+.bdnd.npc .npc-header {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 3px double #5a3d2b;
+}
+
+.bdnd.npc .npc-header-details { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.bdnd.npc .npc-name {
+  min-width: 0;
+  width: 100%;
+}
+.bdnd.npc .npc-name input {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.25em;
+  font-weight: bold;
+  color: #8b0000;
+  width: 100%;
+  display: block;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.bdnd.npc .npc-motivation {
+  width: 100%;
+  font-style: italic;
+  font-size: 0.88em;
+  color: #5a3d2b;
+  border-bottom: 1px dashed #8c6d53;
+  background: transparent;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+/* NPC counter grid — two columns */
+.bdnd.npc .npc-ctr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+/* NPC conditions inline inside combat status panel */
+.bdnd.npc .npc-conditions-inner {
+  border-top: 1px dashed rgba(90,61,43,0.3);
+  padding-top: 5px;
+  margin-top: 2px;
+}
+.bdnd.npc .npc-cond-lbl {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.85em;
+  color: #8b0000;
+  display: block;
+  margin-bottom: 3px;
+}
+
+/* NPC ability table compact */
+.bdnd.npc .npc-ability-table { font-size: 0.85em; }
+.bdnd.npc .npc-ability-input { text-align: center; height: 20px; font-size: 0.9em; }
+.bdnd.npc .npc-item-name { font-size: 0.92em; }
+.bdnd.npc .npc-biography { min-height: 80px; font-size: 0.88em; }
+
+/* ══ SHIP SHEET ════════════════════════════════════════════════════ */
+
+.bdnd.ship .ship-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 3px double #5a3d2b;
+}
+
+.bdnd.ship .ship-portrait {
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  object-fit: cover;
+  border: 2px solid #5a3d2b;
+  border-radius: 3px;
+  background: #2c1e16;
+}
+
+.bdnd.ship .ship-header-details { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.bdnd.ship .ship-name {
+  min-width: 0;
+  width: 100%;
+}
+.bdnd.ship .ship-name input {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.35em;
+  font-weight: bold;
+  color: #8b0000;
+  width: 100%;
+  display: block;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.bdnd.ship .ship-meta-row { display: flex; gap: 12px; }
+.bdnd.ship .ship-meta-field { display: flex; align-items: center; gap: 5px; flex: 1; }
+.bdnd.ship .ship-meta-field label {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.88em;
+  flex: 0 0 auto;
+  color: #5a3d2b;
+}
+
+/* Ship stats inside Hull & Complement panel */
+.bdnd.ship .ship-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(90,61,43,0.2);
+}
+.bdnd.ship .ship-stat-row:last-child { border-bottom: none; }
+
+.bdnd.ship .ship-stat-label {
+  min-width: 160px;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.9em;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.bdnd.ship .ship-stat-label .field-hint { font-family: 'Crimson Text', serif; font-size: 0.8em; }
+
+.bdnd.ship .ship-stat-fields { display: flex; align-items: center; gap: 8px; flex: 1; flex-wrap: wrap; }
+.bdnd.ship .ship-stat-cell { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.bdnd.ship .stat-sublabel { font-size: 0.68em; text-transform: uppercase; letter-spacing: 0.5px; color: #8c6d53; }
+.bdnd.ship .ship-stat-input { width: 48px; text-align: center; font-size: 1.05em; font-weight: bold; }
+.bdnd.ship .ship-stat-current-input { background: rgba(139,0,0,0.07); border: 1px solid rgba(139,0,0,0.3); color: #8b0000; }
+.bdnd.ship .ship-stat-action { align-self: flex-end; }
+
+/* Minor stats row */
+.bdnd.ship .ship-minor-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+.bdnd.ship .ship-minor-cell { display: flex; flex-direction: column; gap: 4px; min-width: 80px; }
+.bdnd.ship .ship-cargo-cell { min-width: 130px; }
+.bdnd.ship .cargo-row { display: flex; align-items: flex-end; gap: 4px; }
+.bdnd.ship .cargo-field { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.bdnd.ship .ship-minor-cell label { font-family: 'IM Fell English SC', serif; font-size: 0.88em; }
+.bdnd.ship .ship-minor-input { width: 56px; text-align: center; font-size: 1.05em; font-weight: bold; }
+.bdnd.ship .booty-input { color: #b8860b; }
+
+/* Action buttons */
+.bdnd.ship button.fire-cannons,
+.bdnd.ship button.payout-btn {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.82em;
+  padding: 2px 8px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.bdnd.ship button.fire-cannons { background: #ffe6e6; border: 1px solid #8b0000; color: #8b0000; }
+.bdnd.ship button.payout-btn   { background: #fffde6; border: 1px solid #b8860b; color: #b8860b; }
+
+/* Tracker inner — fills the sp-tracker frame */
+.bdnd.ship .tracker-inner {
+  display: flex;
+  flex-direction: column;
+}
+.bdnd.ship .tracker-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 6px 12px;
+  color: #f5edd8;
+}
+.bdnd.ship .maneuver-tracker .tracker-header { background: #4a3c31; }
+.bdnd.ship .shape-tracker    .tracker-header { background: #8b0000; }
+.bdnd.ship .boarding-tracker .tracker-header { background: #2c3e50; }
+
+.bdnd.ship .tracker-bar-wrap { height: 6px; background: rgba(0,0,0,0.2); }
+.bdnd.ship .tracker-bar { height: 100%; min-width: 2px; transition: width 0.3s ease; }
+.bdnd.ship .maneuver-bar { background: linear-gradient(to right, #6b5344, #b8860b); }
+.bdnd.ship .shape-bar    { background: linear-gradient(to right, #a00, #ff4500); }
+.bdnd.ship .boarding-bar { background: linear-gradient(to right, #2c3e50, #c0392b); }
+
+.bdnd.ship .tracker-label {
+  padding: 6px 12px;
+  font-style: italic;
+  font-size: 0.92em;
+  text-align: center;
+  background: rgba(255,255,255,0.15);
+}
+.bdnd.ship .shape-label { color: #8b0000; font-weight: 600; }
+
+.bdnd.ship .counter-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Crimson Text', serif;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+.bdnd.ship .counter-value { min-width: 60px; text-align: center; color: #f5edd8; }
+.bdnd.ship .counter-controls a { color: #f5edd8; cursor: pointer; opacity: 0.9; transition: opacity 0.12s; }
+.bdnd.ship .counter-controls a:hover { opacity: 0.65; }
+.bdnd.ship .counter-risk-roll {
+  font-size: 0.7em;
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-family: 'IM Fell English SC', serif;
+}
+
+/* Lower grid — mods + log side by side */
+.bdnd.ship .ship-lower-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.bdnd.ship .ship-mods { min-height: 80px; }
+
+/* ══ CHAT CARDS ═══════════════════════════════════════════════════ */
+/* Scoped under .system-bdnd to avoid cross-system conflicts         */
+
+.system-bdnd .bdnd-roll,
+.system-bdnd .bdnd-spend,
+.bdnd-roll,
+.bdnd-spend {
+  background: #f5edd8;
+  border: 2px solid #5a3d2b;
+  border-radius: 4px;
+  padding: 10px;
+  font-family: 'Crimson Text', 'Book Antiqua', Palatino, serif;
+  color: #2c1e16;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+}
+
+/* Suppress Foundry's own dice roll display beneath our custom card */
+.system-bdnd .chat-message .message-content .bdnd-roll ~ .dice-roll,
+.system-bdnd .chat-message .message-content .bdnd-roll ~ .dice-tooltip,
+.system-bdnd .chat-message .dice-roll { display: none !important; }
+
+.bdnd-roll h2 {
+  margin: 0 0 6px;
+  font-family: 'IM Fell English SC', serif;
+  border-bottom: 2px solid #5a3d2b;
+  padding-bottom: 4px;
+  font-size: 1.3em;
+  color: #8b0000;
+  font-weight: bold;
+}
+
+.bdnd-roll .roll-details {
+  line-height: 1.55;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #c2b59b;
+  margin-bottom: 7px;
+}
+
+.bdnd-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.92em;
+  padding: 1px 0;
+}
+.bdnd-breakdown-row.bdnd-bonus { color: #2a6b2a; }
+.bdnd-breakdown-row.bdnd-info  { color: #8c6d53; font-size: 0.85em; font-style: italic; }
+.bdnd-breakdown-row.bdnd-malus { color: #8b0000; font-weight: bold; }
+.bdnd-breakdown-row.bdnd-spell-cost { color: #5a007a; font-weight: bold; }
+
+.bdnd-roll .dice-result {
+  text-align: center;
+  padding: 6px 8px;
+  background: #eee0c0;
+  border: 1px solid #8c6d53;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px #f5edd8, inset 0 0 0 3px rgba(90,61,43,0.15);
+}
+.bdnd-roll .dice-result h3 {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.4em;
+  margin: 0 0 2px;
+  border: none;
+  color: #2c1e16;
+}
+.bdnd-roll .tn-label {
+  font-size: 0.8em;
+  color: #8c6d53;
+  font-style: italic;
+}
+
+.bdnd-result-success {
+  display: block;
+  margin-top: 4px;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.1em;
+  color: #2a6b2a;
+  letter-spacing: 0.5px;
+}
+.bdnd-result-failure {
+  display: block;
+  margin-top: 4px;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.1em;
+  color: #8b0000;
+  letter-spacing: 0.5px;
+}
+.bdnd-result-greater-success {
+  display: block;
+  margin-top: 4px;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.15em;
+  color: #8a6500;
+  letter-spacing: 0.5px;
+}
+
+/* ── Greater Success banner ──────────────────────────────────── */
+.bdnd-greater-success {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: rgba(201, 162, 39, 0.12);
+  border: 1px solid rgba(201, 162, 39, 0.5);
+  border-radius: 4px;
+  font-size: 0.88em;
+  color: #5a3d00;
+}
+.bdnd-greater-success ul {
+  margin: 4px 0 0 0;
+  padding-left: 18px;
+}
+.bdnd-greater-success li {
+  margin: 2px 0;
+}
+
+/* ── Complication banner ─────────────────────────────────────── */
+.bdnd-complication {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: rgba(139, 0, 0, 0.07);
+  border: 1px solid rgba(139, 0, 0, 0.35);
+  border-radius: 4px;
+  font-size: 0.88em;
+  color: #5a0000;
+}
+
+/* Investigative spend card */
+.bdnd-spend h3 {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.1em;
+  margin: 0 0 5px;
+  border-bottom: 1px solid #8c6d53;
+  padding-bottom: 3px;
+  color: #8b0000;
+}
+.bdnd-ability-name {
+  font-family: 'IM Fell English SC', serif;
+  letter-spacing: 0.5px;
+}
+.bdnd-spend .points-remaining {
+  font-size: 0.88em;
+  color: #8c6d53;
+  font-style: italic;
+  margin-top: 3px;
+}
+
+/* Broadside card accent */
+.bdnd-broadside { border-color: #8b0000; }
+.bdnd-broadside h2 { color: #8b0000; border-bottom-color: #8b0000; }
+
+/* Chat message speaker styling */
+.system-bdnd .chat-message .message-header {
+  font-family: 'IM Fell English SC', serif;
+  border-bottom: 1px solid #c2b59b;
+  padding-bottom: 3px;
+  margin-bottom: 4px;
+}
+.system-bdnd .chat-message .message-sender {
+  font-family: 'IM Fell English SC', serif;
+  color: #5a3d2b;
+  font-size: 0.9em;
+}
+.system-bdnd .chat-message .message-timestamp {
+  color: #8c6d53;
+  font-size: 0.78em;
+}
+.system-bdnd .chat-message {
+  border-bottom: 1px solid #c2b59b;
+}
+
+
+
+/* ══ DIALOG THEMING ════════════════════════════════════════════════ */
+
+/* Target all dialogs while this system is active */
+.system-bdnd .app.dialog {
+  background: #f5edd8;
+  border: 2px solid #5a3d2b;
+  border-radius: 4px;
+  box-shadow: 3px 4px 14px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(90,61,43,0.15);
+  font-family: 'Crimson Text', 'Book Antiqua', Palatino, serif;
+  color: #2c1e16;
+}
+
+/* Title bar — dark timber with gold rule */
+.system-bdnd .app.dialog .window-header {
+  background: #3e2b1d;
+  border-bottom: 2px solid #8b6914;
+  border-radius: 2px 2px 0 0;
+  padding: 5px 10px;
+}
+.system-bdnd .app.dialog .window-title {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.95em;
+  color: #f0dfa0;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.system-bdnd .app.dialog .header-button {
+  color: #c2a87a;
+  opacity: 0.75;
+  transition: opacity 0.12s;
+}
+.system-bdnd .app.dialog .header-button:hover { opacity: 1; }
+
+/* Body — flat parchment */
+.system-bdnd .app.dialog .window-content {
+  background: #f5edd8;
+  padding: 14px 14px 10px !important;
+  font-family: 'Crimson Text', 'Book Antiqua', Palatino, serif;
+  font-size: 15px;
+  color: #2c1e16;
+}
+
+/* Buttons footer — dark timber matching header */
+.system-bdnd .app.dialog .dialog-buttons {
+  background: #3e2b1d;
+  border-top: 2px solid #8b6914;
+  padding: 7px 10px;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.system-bdnd .app.dialog .dialog-buttons button {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.9em;
+  letter-spacing: 0.5px;
+  padding: 4px 16px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: filter 0.12s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.system-bdnd .app.dialog .dialog-buttons button:hover { filter: brightness(1.15); }
+
+/* Primary action button (first / default) */
+.system-bdnd .app.dialog .dialog-buttons button.default,
+.system-bdnd .app.dialog .dialog-buttons button:first-child {
+  background: #8b0000;
+  border-color: #600000;
+  color: #f5edd8;
+}
+/* Secondary / cancel buttons */
+.system-bdnd .app.dialog .dialog-buttons button:not(:first-child) {
+  background: rgba(90,61,43,0.2);
+  border-color: #8c6d53;
+  color: #f0dfa0;
+}
+
+/* ── Dialog form content ── */
+
+.bdnd-dialog .form-group {
+  margin-bottom: 9px;
+}
+.bdnd-dialog .form-group label {
+  display: block;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.82em;
+  color: #5a3d2b;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+  font-weight: normal;
+}
+.field-hint {
+  font-family: 'Crimson Text', serif;
+  font-weight: normal;
+  font-style: italic;
+  color: #8c6d53;
+  font-size: 0.85em;
+}
+.bdnd-dialog input[type="number"],
+.bdnd-dialog input[type="text"],
+.bdnd-dialog select {
+  width: 100%;
+  background: #ede0c4;
+  border: 1px solid #8c6d53;
+  border-radius: 2px;
+  padding: 3px 6px;
+  font-family: 'Crimson Text', serif;
+  font-size: 0.95em;
+  color: #2c1e16;
+}
+.bdnd-dialog input:focus,
+.bdnd-dialog select:focus {
+  outline: none;
+  border-color: #8b0000;
+  background: #f5e8d0;
+  box-shadow: none;
+}
+
+/* Rule note — left-bordered callout */
+.bdnd-rule-note {
+  background: rgba(90,61,43,0.07);
+  border-left: 3px solid #5a3d2b;
+  padding: 5px 8px;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  line-height: 1.45;
+}
+.bdnd-spell-note { border-color: #5a007a; background: rgba(90,0,122,0.06); }
+.bdnd-unskilled { color: #8b0000; font-size: 0.85em; margin-left: 6px; }
+
+/* Exploit point checkbox group */
+.bdnd-exploit-group {
+  background: rgba(90,61,43,0.06);
+  border: 1px dashed #8c6d53;
+  border-radius: 3px;
+  padding: 5px 8px;
+  margin-bottom: 9px;
+}
+.bdnd-exploit-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Crimson Text', serif;
+  font-size: 0.9em;
+  font-weight: normal;
+  color: #3e2b1d;
+}
+
+/* Cherry notice in roll dialogs */
+.bdnd-cherry-notice {
+  background: rgba(184,134,11,0.1);
+  border: 1px solid #b8860b;
+  border-radius: 3px;
+  padding: 5px 8px;
+  margin-bottom: 9px;
+  font-size: 0.88em;
+  color: #5a3d00;
+}
+.bdnd-cherry-notice i { color: #b8860b; margin-right: 4px; }
+
+
+
+/* ── Cherry Items ────────────────────────────────────────────────── */
+.bdnd .cherry-list { margin-top: 4px; }
+
+.bdnd .cherry-item {
+  align-items: center;
+  padding: 3px 4px;
+  border-bottom: 1px dotted #c8a882;
+  gap: 6px;
+}
+.bdnd .cherry-item:last-child { border-bottom: none; }
+
+.bdnd .cherry-star {
+  color: #b8860b;
+  font-size: 1.1em;
+  flex: 0 0 16px;
+  text-align: center;
+}
+
+.bdnd .cherry-details {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.bdnd .cherry-name {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.95em;
+  color: #3a2a1a;
+}
+
+.bdnd .cherry-ability {
+  font-size: 0.8em;
+  color: #7a5c3a;
+  font-style: italic;
+}
+
+.bdnd .cherry-badge {
+  font-size: 0.72em;
+  font-weight: bold;
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.bdnd .cherry-badge.health-badge    { background: #8b0000; color: #fff; }
+.bdnd .cherry-badge.stability-badge { background: #1a4a7a; color: #fff; }
+.bdnd .cherry-badge.post-roll-badge { background: #2a6b2a; color: #fff; }
+
+/* Cherry reminder in chat card */
+.bdnd-cherry-card-note {
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: rgba(184, 134, 11, 0.12);
+  border-left: 3px solid #b8860b;
+  font-size: 0.85em;
+  color: #5a3d00;
+  border-radius: 0 3px 3px 0;
+}
+
+/* ── Counter threshold crossing notes ───────────────────────────── */
+.bdnd-threshold-note {
+  font-size: 0.82em;
+  padding: 2px 4px 2px 12px;
+  color: #5a1a1a;
+  border-left: 2px solid #8b0000;
+  margin: 1px 0;
+}
+.bdnd-threshold-note .threshold-level {
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+/* NPC cherry add link (shown when no cherries exist) */
+.bdnd.npc .npc-cherry-add {
+  font-size: 0.85em;
+  padding: 2px 4px;
+  opacity: 0.7;
+}
+.bdnd.npc .npc-cherry-add:hover { opacity: 1; }
+
+/* Remove old npc-add-condition rule if any stray margin */
+.bdnd.npc .npc-add-condition { display: none; }
+
+/* ── Combat Tracker — drag-to-reorder (SHAMUS narrative initiative) ─────── */
+/* GM can drag combatant rows to set turn order; initiative values are then   */
+/* reassigned in the background to persist the sequence.                      */
+
+#combat ol.combat-tracker li.combatant[draggable="true"] {
+  cursor: grab;
+}
+#combat ol.combat-tracker li.combatant[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+/* Dragged item fades so you can see where you're dropping */
+#combat ol.combat-tracker li.combatant.bdnd-drag-source {
+  opacity: 0.35;
+}
+
+/* Drop target shows a gold insertion line above it */
+#combat ol.combat-tracker li.combatant.bdnd-drag-over {
+  border-top: 2px solid #c9a227 !important;
+  margin-top: -2px;
+}

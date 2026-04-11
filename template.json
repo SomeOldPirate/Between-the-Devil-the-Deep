@@ -1,0 +1,659 @@
+{
+  "Actor": {
+    "types": [
+      "character",
+      "ship",
+      "npc"
+    ],
+    "character": {
+      "biography": "",
+      "build_points": {
+        "value": 0
+      },
+      "health": {
+        "value": 0,
+        "base": 10,
+        "max": 10,
+        "label": "Health Risk"
+      },
+      "stability": {
+        "value": 0,
+        "base": 10,
+        "max": 10,
+        "label": "Stability Risk"
+      },
+      "booty": {
+        "value": 0
+      },
+      "coin": {
+        "value": 0
+      },
+      "approaches": {
+        "forceful": {
+          "value": 0,
+          "rating": 0,
+          "label": "Forceful"
+        },
+        "slick": {
+          "value": 0,
+          "rating": 0,
+          "label": "Slick"
+        },
+        "flashy": {
+          "value": 0,
+          "rating": 0,
+          "label": "Flashy"
+        },
+        "agile": {
+          "value": 0,
+          "rating": 0,
+          "label": "Agile"
+        },
+        "focused": {
+          "value": 0,
+          "rating": 0,
+          "label": "Focused"
+        },
+        "deceptive": {
+          "value": 0,
+          "rating": 0,
+          "label": "Deceptive"
+        }
+      },
+      "abilities": {
+        "general": {
+          "artillery": {
+            "value": 0,
+            "rating": 0
+          },
+          "athletics": {
+            "value": 0,
+            "rating": 0
+          },
+          "burglary": {
+            "value": 0,
+            "rating": 0
+          },
+          "business_affairs": {
+            "value": 0,
+            "rating": 0
+          },
+          "disguise": {
+            "value": 0,
+            "rating": 0
+          },
+          "filch": {
+            "value": 0,
+            "rating": 0
+          },
+          "firearms": {
+            "value": 0,
+            "rating": 0
+          },
+          "gambling": {
+            "value": 0,
+            "rating": 0
+          },
+          "navigation": {
+            "value": 0,
+            "rating": 0
+          },
+          "politics": {
+            "value": 0,
+            "rating": 0
+          },
+          "riding": {
+            "value": 0,
+            "rating": 0
+          },
+          "scuffling": {
+            "value": 0,
+            "rating": 0
+          },
+          "seamanship": {
+            "value": 0,
+            "rating": 0
+          },
+          "sense_trouble": {
+            "value": 0,
+            "rating": 0
+          },
+          "spell_casting": {
+            "value": 0,
+            "rating": 0
+          },
+          "stealth": {
+            "value": 0,
+            "rating": 0
+          },
+          "swimming": {
+            "value": 0,
+            "rating": 0
+          },
+          "tinkering": {
+            "value": 0,
+            "rating": 0
+          },
+          "traps_bombs": {
+            "value": 0,
+            "rating": 0
+          },
+          "weapons": {
+            "value": 0,
+            "rating": 0
+          }
+        },
+        "investigative": {
+          "alchemy": {
+            "value": 0,
+            "rating": 0
+          },
+          "anthropology": {
+            "value": 0,
+            "rating": 0
+          },
+          "architecture": {
+            "value": 0,
+            "rating": 0
+          },
+          "art_history": {
+            "value": 0,
+            "rating": 0
+          },
+          "belle_lettres": {
+            "value": 0,
+            "rating": 0
+          },
+          "bureaucracy": {
+            "value": 0,
+            "rating": 0
+          },
+          "flattery": {
+            "value": 0,
+            "rating": 0
+          },
+          "forgery": {
+            "value": 0,
+            "rating": 0
+          },
+          "high_society": {
+            "value": 0,
+            "rating": 0
+          },
+          "history": {
+            "value": 0,
+            "rating": 0
+          },
+          "inspire": {
+            "value": 0,
+            "rating": 0
+          },
+          "intimidation": {
+            "value": 0,
+            "rating": 0
+          },
+          "languages": {
+            "value": 0,
+            "rating": 0
+          },
+          "law": {
+            "value": 0,
+            "rating": 0
+          },
+          "leadership": {
+            "value": 0,
+            "rating": 0
+          },
+          "medicine": {
+            "value": 0,
+            "rating": 0
+          },
+          "military_tactics": {
+            "value": 0,
+            "rating": 0
+          },
+          "natural_philosophy": {
+            "value": 0,
+            "rating": 0
+          },
+          "negotiation": {
+            "value": 0,
+            "rating": 0
+          },
+          "occult": {
+            "value": 0,
+            "rating": 0
+          },
+          "outdoor_survival": {
+            "value": 0,
+            "rating": 0
+          },
+          "art": {
+            "value": 0,
+            "rating": 0
+          },
+          "cultures": {
+            "value": 0,
+            "rating": 0
+          },
+          "performance": {
+            "value": 0,
+            "rating": 0
+          },
+          "poetry": {
+            "value": 0,
+            "rating": 0
+          },
+          "reassurance": {
+            "value": 0,
+            "rating": 0
+          },
+          "repartee": {
+            "value": 0,
+            "rating": 0
+          },
+          "salt_of_the_sea": {
+            "value": 0,
+            "rating": 0
+          },
+          "sense_lies": {
+            "value": 0,
+            "rating": 0
+          },
+          "ship_building": {
+            "value": 0,
+            "rating": 0
+          },
+          "streetwise": {
+            "value": 0,
+            "rating": 0
+          },
+          "theology": {
+            "value": 0,
+            "rating": 0
+          },
+          "voodoo": {
+            "value": 0,
+            "rating": 0
+          }
+        }
+      }
+    },
+    "npc": {
+      "biography": "",
+      "health": {
+        "value": 0,
+        "base": 10,
+        "max": 10,
+        "label": "Health Risk"
+      },
+      "stability": {
+        "value": 0,
+        "base": 10,
+        "max": 10,
+        "label": "Stability Risk"
+      },
+      "booty": {
+        "value": 0
+      },
+      "coin": {
+        "value": 0
+      },
+      "approaches": {
+        "forceful": {
+          "value": 0,
+          "rating": 0,
+          "label": "Forceful"
+        },
+        "slick": {
+          "value": 0,
+          "rating": 0,
+          "label": "Slick"
+        },
+        "flashy": {
+          "value": 0,
+          "rating": 0,
+          "label": "Flashy"
+        },
+        "agile": {
+          "value": 0,
+          "rating": 0,
+          "label": "Agile"
+        },
+        "focused": {
+          "value": 0,
+          "rating": 0,
+          "label": "Focused"
+        },
+        "deceptive": {
+          "value": 0,
+          "rating": 0,
+          "label": "Deceptive"
+        }
+      },
+      "abilities": {
+        "general": {
+          "artillery": {
+            "value": 0,
+            "rating": 0
+          },
+          "athletics": {
+            "value": 0,
+            "rating": 0
+          },
+          "burglary": {
+            "value": 0,
+            "rating": 0
+          },
+          "business_affairs": {
+            "value": 0,
+            "rating": 0
+          },
+          "disguise": {
+            "value": 0,
+            "rating": 0
+          },
+          "filch": {
+            "value": 0,
+            "rating": 0
+          },
+          "firearms": {
+            "value": 0,
+            "rating": 0
+          },
+          "gambling": {
+            "value": 0,
+            "rating": 0
+          },
+          "navigation": {
+            "value": 0,
+            "rating": 0
+          },
+          "politics": {
+            "value": 0,
+            "rating": 0
+          },
+          "riding": {
+            "value": 0,
+            "rating": 0
+          },
+          "scuffling": {
+            "value": 0,
+            "rating": 0
+          },
+          "seamanship": {
+            "value": 0,
+            "rating": 0
+          },
+          "sense_trouble": {
+            "value": 0,
+            "rating": 0
+          },
+          "spell_casting": {
+            "value": 0,
+            "rating": 0
+          },
+          "stealth": {
+            "value": 0,
+            "rating": 0
+          },
+          "swimming": {
+            "value": 0,
+            "rating": 0
+          },
+          "tinkering": {
+            "value": 0,
+            "rating": 0
+          },
+          "traps_bombs": {
+            "value": 0,
+            "rating": 0
+          },
+          "weapons": {
+            "value": 0,
+            "rating": 0
+          }
+        },
+        "investigative": {
+          "alchemy": {
+            "value": 0,
+            "rating": 0
+          },
+          "anthropology": {
+            "value": 0,
+            "rating": 0
+          },
+          "architecture": {
+            "value": 0,
+            "rating": 0
+          },
+          "art_history": {
+            "value": 0,
+            "rating": 0
+          },
+          "belle_lettres": {
+            "value": 0,
+            "rating": 0
+          },
+          "bureaucracy": {
+            "value": 0,
+            "rating": 0
+          },
+          "flattery": {
+            "value": 0,
+            "rating": 0
+          },
+          "forgery": {
+            "value": 0,
+            "rating": 0
+          },
+          "high_society": {
+            "value": 0,
+            "rating": 0
+          },
+          "history": {
+            "value": 0,
+            "rating": 0
+          },
+          "inspire": {
+            "value": 0,
+            "rating": 0
+          },
+          "intimidation": {
+            "value": 0,
+            "rating": 0
+          },
+          "languages": {
+            "value": 0,
+            "rating": 0
+          },
+          "law": {
+            "value": 0,
+            "rating": 0
+          },
+          "leadership": {
+            "value": 0,
+            "rating": 0
+          },
+          "medicine": {
+            "value": 0,
+            "rating": 0
+          },
+          "military_tactics": {
+            "value": 0,
+            "rating": 0
+          },
+          "natural_philosophy": {
+            "value": 0,
+            "rating": 0
+          },
+          "negotiation": {
+            "value": 0,
+            "rating": 0
+          },
+          "occult": {
+            "value": 0,
+            "rating": 0
+          },
+          "outdoor_survival": {
+            "value": 0,
+            "rating": 0
+          },
+          "art": {
+            "value": 0,
+            "rating": 0
+          },
+          "cultures": {
+            "value": 0,
+            "rating": 0
+          },
+          "performance": {
+            "value": 0,
+            "rating": 0
+          },
+          "poetry": {
+            "value": 0,
+            "rating": 0
+          },
+          "reassurance": {
+            "value": 0,
+            "rating": 0
+          },
+          "repartee": {
+            "value": 0,
+            "rating": 0
+          },
+          "salt_of_the_sea": {
+            "value": 0,
+            "rating": 0
+          },
+          "sense_lies": {
+            "value": 0,
+            "rating": 0
+          },
+          "ship_building": {
+            "value": 0,
+            "rating": 0
+          },
+          "streetwise": {
+            "value": 0,
+            "rating": 0
+          },
+          "theology": {
+            "value": 0,
+            "rating": 0
+          },
+          "voodoo": {
+            "value": 0,
+            "rating": 0
+          }
+        }
+      }
+    },
+    "ship": {
+      "captain": "",
+      "class": "",
+      "biography": "",
+      "cargo": {
+        "current": "",
+        "max": ""
+      },
+      "sails": {
+        "rating": 0,
+        "min": 0,
+        "current": 0
+      },
+      "hands": {
+        "skeleton": 0,
+        "full": 0,
+        "battle": 0,
+        "current": 0
+      },
+      "cannons": {
+        "current": 0,
+        "max": 0
+      },
+      "provisions": {
+        "value": 0,
+        "max": 0
+      },
+      "armor": 0,
+      "counters": {
+        "maneuver": {
+          "value": 0,
+          "max": 36
+        },
+        "ship_shape": {
+          "value": 0,
+          "max": 50
+        },
+        "boarding": {
+          "value": 0,
+          "max": 20
+        }
+      },
+      "booty": {
+        "value": 0
+      },
+      "modifications": ""
+    }
+  },
+  "Item": {
+    "types": [
+      "item",
+      "lore_sheet",
+      "weapon",
+      "condition",
+      "armor",
+      "spell",
+      "drive",
+      "cherry"
+    ],
+    "lore_sheet": {
+      "tapped": false,
+      "resolved": false,
+      "description": ""
+    },
+    "weapon": {
+      "bonus": 0,
+      "range": "Close",
+      "notes": "",
+      "equipped": true,
+      "ability": "weapons",
+      "ammo": {
+        "value": 0,
+        "max": 0
+      }
+    },
+    "armor": {
+      "block": 0,
+      "equipped": true,
+      "description": ""
+    },
+    "condition": {
+      "approach": "forceful",
+      "conditionType": "physical",
+      "description": ""
+    },
+    "spell": {
+      "level": 1,
+      "target_tn": 5,
+      "description": ""
+    },
+    "drive": {
+      "description": ""
+    },
+    "item": {
+      "description": ""
+    },
+    "cherry": {
+      "ability": "athletics",
+      "cherry_name": "",
+      "effect_type": "special",
+      "health_max_bonus": 0,
+      "stability_max_bonus": 0,
+      "has_post_roll_spend": false,
+      "description": ""
+    }
+  }
+}
