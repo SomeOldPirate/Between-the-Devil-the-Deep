@@ -1,0 +1,61 @@
+<div class="tab {{tab.cssClass}}" data-tab="investigative" data-group="primary" data-application-part="investigative">
+
+  <div class="tab-toolbar flexrow">
+    <a data-action="toggleAbilities"><i class="fas fa-eye"></i>
+      {{#if showAllAbilities}}Hide Unrated{{else}}Show All Skills{{/if}}
+    </a>
+    <a data-action="loreRefreshAll"><i class="fas fa-undo"></i> Untap All Lore Sheets</a>
+    <span class="bp-display" title="Build Points available for advancement">BP: {{system.build_points.value}}</span>
+  </div>
+
+  {{#if (eq investigativeAbilities.length 0)}}
+  <p class="empty-hint">No investigative abilities rated — click <em>Show All Skills</em> to assign ratings.</p>
+  {{/if}}
+
+  <div class="sp sp-abilities">
+    <span class="sp-title">Investigative Abilities</span>
+    <table class="ability-table">
+      <thead>
+        <tr><th>Ability</th><th>Rating</th><th>Pool</th><th></th></tr>
+      </thead>
+      <tbody>
+        {{#each investigativeAbilities as |ability|}}
+        <tr>
+          <td><a data-action="spendInvestigative" data-key="{{ability.key}}" class="ability-roll-label">{{ability.label}}</a></td>
+          <td><input type="number" name="system.abilities.investigative.{{ability.key}}.rating" value="{{ability.rating}}"/></td>
+          <td><input type="number" name="system.abilities.investigative.{{ability.key}}.value"  value="{{ability.value}}" class="pool-input"/></td>
+          <td>
+            {{#if (eq ability.key "reassurance")}}<a data-action="spendReassurance" title="Spend Reassurance to reduce a character's Stability Counter"><i class="fas fa-heart"></i></a>{{/if}}
+            {{#if ../system.build_points.value}}<a data-action="raiseRating" data-type="investigative" data-key="{{ability.key}}" title="Spend 1 Build Point to raise {{ability.label}} Rating"><i class="fas fa-arrow-up"></i></a>{{/if}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sp">
+    <span class="sp-title">Lore Sheets <a data-action="itemCreate" data-type="lore_sheet" class="sp-add"><i class="fas fa-plus"></i></a></span>
+    <ul class="item-list lore-list">
+      {{#each loreSheets as |item|}}
+      <li class="item flexrow lore-item {{#if item.system.resolved}}lore-resolved{{/if}}" data-item-id="{{item._id}}">
+        <div class="lore-status">
+          {{#if item.system.resolved}}<span class="lore-badge resolved" title="Resolved">✓</span>
+          {{else if item.system.tapped}}<span class="lore-badge tapped" title="Tapped">◉</span>
+          {{else}}<span class="lore-badge fresh" title="Available">○</span>{{/if}}
+        </div>
+        <h4 class="item-name">{{item.name}}</h4>
+        <div class="item-controls lore-controls">
+          <a data-action="loreToggle" title="{{#if item.system.tapped}}Untap{{else}}Tap{{/if}}">
+            <i class="fas {{#if item.system.tapped}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i>
+          </a>
+          <a data-action="loreResolve" title="{{#if item.system.resolved}}Un-resolve{{else}}Resolve{{/if}}"><i class="fas fa-flag"></i></a>
+          <a data-action="itemEdit"><i class="fas fa-edit"></i></a>
+          <a data-action="itemDelete"><i class="fas fa-trash"></i></a>
+        </div>
+      </li>
+      {{/each}}
+    </ul>
+  </div>
+
+</div>

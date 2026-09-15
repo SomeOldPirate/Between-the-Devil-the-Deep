@@ -1,0 +1,121 @@
+{{!-- ══ HEADER ══════════════════════════════════════════════════════ --}}
+<header class="pc-header">
+  <img src="{{actor.img}}" data-action="editImage" data-edit="img" title="{{actor.name}}" class="actor-portrait pc-portrait"/>
+  <div class="pc-header-details">
+    <div class="charname">
+      <input name="name" type="text" value="{{actor.name}}" placeholder="Captain's Name"/>
+    </div>
+    <div class="drive-row flexrow">
+      <label class="drive-label">Drive:</label>
+      {{#if driveItem}}
+        <div class="item drive-slot" data-item-id="{{driveItem._id}}"
+             title="{{stripHTML driveItem.system.description}}">
+          <span class="drive-name">{{driveItem.name}}</span>
+          <a data-action="itemDelete" class="drive-delete" title="Remove Drive"><i class="fas fa-times"></i></a>
+        </div>
+      {{else}}
+        <div class="drive-placeholder">Drop a Drive item here…</div>
+      {{/if}}
+    </div>
+  </div>
+</header>
+
+{{!-- ══ APPROACHES — STAMPED LEDGER PANEL ═══════════════════════════ --}}
+<div class="ledger-panel">
+  <div class="ledger-grid">
+    {{#each approachList as |approach|}}
+    <div class="ledger-col">
+      <div class="ledger-lbl-row">
+        <span class="ledger-lbl">{{approach.label}}</span>
+        {{#each approach.conditionBadges as |badge|}}
+          <span class="approach-cond-badge {{badge.type}}" title="{{badge.name}} — −1 to all {{../approach.label}} Tests">−1</span>
+        {{/each}}
+      </div>
+      <div class="ledger-rtg-row">
+        <span class="ledger-rtg-label">Rtg</span>
+        <input type="number" name="system.approaches.{{approach.key}}.rating"
+               value="{{approach.rating}}" class="ledger-rtg-input"/>
+      </div>
+      <div class="approach-pips" title="Pool: {{approach.pool}} / {{approach.rating}}">
+        {{#each approach.pips as |pip|}}
+          <span class="pip {{#if pip.full}}pip-full{{else}}pip-empty{{/if}}"></span>
+        {{/each}}
+        {{#if (eq approach.rating 0)}}
+          <span class="approach-unrated">—</span>
+        {{/if}}
+      </div>
+      <input type="number" name="system.approaches.{{approach.key}}.value"
+             value="{{approach.pool}}" class="approach-pool-input ledger-pool"/>
+    </div>
+    {{/each}}
+  </div>
+</div>
+
+{{!-- ══ RISK COUNTERS ══════════════════════════════════════════════ --}}
+<div class="pc-counters-row">
+
+  <div class="pc-counter health-counter">
+    <div class="pc-counter-head">
+      <span class="pc-counter-lbl"><i class="fas fa-heartbeat"></i> Health Risk</span>
+      <span class="pc-counter-nums">
+        <input type="number" name="system.health.value" value="{{system.health.value}}" class="counter-val-input"/>
+        <span class="counter-sep">/</span>
+        <span class="counter-max-display" title="Base: {{system.health.base}} + Cherry bonuses">{{system.health.max}}</span>
+        <input type="number" name="system.health.base" value="{{system.health.base}}" class="counter-base-input" title="Edit base max"/>
+      </span>
+    </div>
+    <div class="pc-counter-bar-wrap">
+      <div class="pc-counter-bar health-bar"
+           style="width:{{healthPct}}%;max-width:100%"></div>
+    </div>
+    <button type="button" data-action="rollClutch" class="pc-counter-btn">Clutch Test</button>
+  </div>
+
+  <div class="pc-counter stab-counter">
+    <div class="pc-counter-head">
+      <span class="pc-counter-lbl"><i class="fas fa-brain"></i> Stability Risk</span>
+      <span class="pc-counter-nums">
+        <input type="number" name="system.stability.value" value="{{system.stability.value}}" class="counter-val-input"/>
+        <span class="counter-sep">/</span>
+        <span class="counter-max-display" title="Base: {{system.stability.base}} + Cherry bonuses">{{system.stability.max}}</span>
+        <input type="number" name="system.stability.base" value="{{system.stability.base}}" class="counter-base-input" title="Edit base max"/>
+      </span>
+    </div>
+    <div class="pc-counter-bar-wrap">
+      <div class="pc-counter-bar stab-bar"
+           style="width:{{stabilityPct}}%;max-width:100%"></div>
+    </div>
+    <button type="button" data-action="rollStability" class="pc-counter-btn">Stability Test</button>
+  </div>
+
+  <div class="pc-block-box">
+    <span class="pc-block-lbl"><i class="fas fa-shield-alt"></i> Block</span>
+    <span class="pc-block-val">{{totalBlock}}</span>
+  </div>
+
+</div>
+
+{{!-- ══ CONDITIONS ══════════════════════════════════════════════════ --}}
+<div class="sp">
+  <span class="sp-title">Conditions
+    <span class="condition-counts">
+      ({{physicalConditions}} phys / {{mentalConditions}} mental
+      {{#if (gte physicalConditions 2)}}<span class="condition-limit-warn">⚠ Limit!</span>{{/if}}
+      {{#if (gte mentalConditions 2)}}<span class="condition-limit-warn">⚠ Limit!</span>{{/if}}
+      )
+    </span>
+  </span>
+  {{#if conditions.length}}
+  <ul class="conditions-list">
+    {{#each conditions as |item|}}
+    <li class="condition-tag {{item.system.conditionType}}" data-item-id="{{item._id}}">
+      <span class="condition-name">{{item.name}}</span>
+      <span class="condition-approach">(−1 {{item.system.approach}})</span>
+      <a data-action="itemEdit" class="condition-edit" title="Edit"><i class="fas fa-edit"></i></a>
+      <a data-action="itemDelete" class="condition-delete" title="Remove"><i class="fas fa-times"></i></a>
+    </li>
+    {{/each}}
+  </ul>
+  {{/if}}
+  <a data-action="itemCreate" data-type="condition" class="add-condition-btn"><i class="fas fa-plus"></i> Add Condition</a>
+</div>

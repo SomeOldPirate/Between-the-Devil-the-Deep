@@ -1,0 +1,88 @@
+<div class="tab {{tab.cssClass}}" data-tab="inventory" data-group="primary" data-application-part="inventory">
+
+  <div class="wealth-row">
+    <label><i class="fas fa-coins"></i> Coin:</label>
+    <input type="number" name="system.coin.value" value="{{system.coin.value}}" class="coin-input"/>
+    <label>Build Points:</label>
+    <input type="number" name="system.build_points.value" value="{{system.build_points.value}}" class="bp-input"/>
+  </div>
+
+  <div class="pc-section-rule">
+    <span><i class="fas fa-sword"></i> Weapons</span>
+    <a data-action="itemCreate" data-type="weapon" class="pc-add-link"><i class="fas fa-plus"></i></a>
+  </div>
+  <ul class="item-list">
+    {{#each weapons as |item|}}
+    <li class="item flexrow" data-item-id="{{item._id}}">
+      <h4 class="item-name">
+        <a data-action="rollWeaponAttack">{{item.name}}</a>
+        <span class="weapon-meta">+{{item.system.bonus}} dmg · {{item.system.range}}{{#if item.system.ammo.max}} · {{item.system.ammo.value}}/{{item.system.ammo.max}} ammo{{/if}}</span>
+      </h4>
+      <div class="item-controls">
+        <a data-action="rollDamage" title="Roll Damage"><i class="fas fa-dice-d6"></i></a>
+        <a data-action="reloadWeapon" title="Reload"><i class="fas fa-redo"></i></a>
+        <a data-action="itemEdit"><i class="fas fa-edit"></i></a>
+        <a data-action="itemDelete"><i class="fas fa-trash"></i></a>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+
+  <div class="pc-section-rule">
+    <span><i class="fas fa-shield-alt"></i> Armour</span>
+    <a data-action="itemCreate" data-type="armor" class="pc-add-link"><i class="fas fa-plus"></i></a>
+  </div>
+  <ul class="item-list">
+    {{#each armors as |item|}}
+    <li class="item flexrow" data-item-id="{{item._id}}">
+      <h4 class="item-name">
+        {{item.name}}
+        <span class="weapon-meta">Block {{item.system.block}}{{#unless item.system.equipped}} (stowed){{/unless}}</span>
+      </h4>
+      <div class="item-controls">
+        <a data-action="toggleEquip" title="{{#if item.system.equipped}}Unequip{{else}}Equip{{/if}}">
+          <i class="fas {{#if item.system.equipped}}fa-shield-alt{{else}}fa-shield{{/if}}"></i>
+        </a>
+        <a data-action="itemEdit"><i class="fas fa-edit"></i></a>
+        <a data-action="itemDelete"><i class="fas fa-trash"></i></a>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+
+  <div class="pc-section-rule">
+    <span><i class="fas fa-hat-wizard"></i> Spells &amp; Rituals</span>
+    <a data-action="itemCreate" data-type="spell" class="pc-add-link"><i class="fas fa-plus"></i></a>
+  </div>
+  <ul class="item-list">
+    {{#each spells as |item|}}
+    <li class="item flexrow" data-item-id="{{item._id}}">
+      <h4 class="item-name">
+        <a data-action="castSpell">{{item.name}}</a>
+        <span class="weapon-meta">Level {{item.system.level}}</span>
+      </h4>
+      <div class="item-controls">
+        <a data-action="itemEdit"><i class="fas fa-edit"></i></a>
+        <a data-action="itemDelete"><i class="fas fa-trash"></i></a>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+
+  <div class="pc-section-rule">
+    <span><i class="fas fa-sack"></i> Sundry Items</span>
+    <a data-action="itemCreate" data-type="item" class="pc-add-link"><i class="fas fa-plus"></i></a>
+  </div>
+  <ul class="item-list">
+    {{#each inventory as |item|}}
+    <li class="item flexrow" data-item-id="{{item._id}}">
+      <h4 class="item-name">{{item.name}}</h4>
+      <div class="item-controls">
+        <a data-action="itemEdit"><i class="fas fa-edit"></i></a>
+        <a data-action="itemDelete"><i class="fas fa-trash"></i></a>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+
+</div>

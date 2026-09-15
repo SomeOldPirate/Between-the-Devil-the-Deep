@@ -1,10 +1,26 @@
-import { BDNDActor } from "./actor.mjs";
-import { BDNDActorSheet, BDNDNPCSheet } from "./sheets/actor-sheet.mjs";
-import { BDNDShipSheet } from "./sheets/ship-sheet.mjs";
-import { BDNDItemSheet } from "./sheets/item-sheet.mjs";
-import { BDNDCounterBoardSheet } from "./sheets/counter-board-sheet.mjs";
+/**
+ * Between the Devil & the Deep — a SHAMUS/GUMSHOE system for Foundry VTT V14+.
+ * @module bdnd
+ */
 
-// ── Coin Flip ───────────────────────────────────────────────────────────────
+import { SYSTEM_ID } from "./config.mjs";
+import { BDNDActor } from "./actor.mjs";
+
+import { CharacterData, NpcData } from "./data/actor-creature.mjs";
+import ShipData from "./data/actor-ship.mjs";
+import CounterBoardData from "./data/actor-counter-board.mjs";
+import { itemDataModels } from "./data/items.mjs";
+
+import BDNDCharacterSheet from "./apps/character-sheet.mjs";
+import BDNDNpcSheet from "./apps/npc-sheet.mjs";
+import BDNDShipSheet from "./apps/ship-sheet.mjs";
+import BDNDCounterBoardSheet from "./apps/counter-board-sheet.mjs";
+import BDNDItemSheet from "./apps/item-sheet.mjs";
+
+/* -------------------------------------------- */
+/*  Coin Flip                                    */
+/* -------------------------------------------- */
+
 // Rolls 1dc (Foundry v12+ native coin die). DSN animates it as the custom
 // Piece of Eight if the module is active. Result 0 = Tails (wins per SHAMUS).
 async function bdndCoinFlip() {
@@ -29,12 +45,14 @@ async function bdndCoinFlip() {
           <em>Per SHAMUS rules: Tails always wins.</em>
         </p>
       </div>
-    `,
-    type: CONST.CHAT_MESSAGE_TYPES?.ROLL ?? 5
+    `
   });
 }
 
-// ── Custom Combat class ─────────────────────────────────────────────────────
+/* -------------------------------------------- */
+/*  Custom Combat class                          */
+/* -------------------------------------------- */
+
 // Replaces "Roll Initiative" with a GM reference card showing each combatant's
 // Approach Ratings and Pools — the data needed to adjudicate SHAMUS initiative.
 // GM then drags combatants into the correct order in the tracker.
@@ -107,11 +125,23 @@ class BDNDCombat extends Combat {
   }
 }
 
+/* -------------------------------------------- */
+/*  Init                                        */
+/* -------------------------------------------- */
+
 Hooks.once("init", async function() {
   console.log("BD&D | Initialising System — Between the Devil and the Deep");
 
   CONFIG.Actor.documentClass  = BDNDActor;
   CONFIG.Combat.documentClass = BDNDCombat;
+
+  CONFIG.Actor.dataModels = {
+    character: CharacterData,
+    npc: NpcData,
+    ship: ShipData,
+    counter_board: CounterBoardData
+  };
+  CONFIG.Item.dataModels = itemDataModels;
 
   // ── Token resource bars — Health and Stability auto-appear on new tokens ───
   // Tells Foundry which actor attributes are valid resource bars so they show
@@ -134,14 +164,22 @@ Hooks.once("init", async function() {
   // Coin flip (Tails wins) is available via the 🪙 button in the tracker.
   CONFIG.Combat.initiative = { formula: "1dc", decimals: 0 };
 
-  Actors.unregisterSheet("core", ActorSheet);
-  Actors.registerSheet("bdnd", BDNDActorSheet,       { types: ["character"],    makeDefault: true, label: "Captain Sheet" });
-  Actors.registerSheet("bdnd", BDNDNPCSheet,         { types: ["npc"],          makeDefault: true, label: "NPC Sheet" });
-  Actors.registerSheet("bdnd", BDNDShipSheet,        { types: ["ship"],         makeDefault: true, label: "Ship Tracker" });
-  Actors.registerSheet("bdnd", BDNDCounterBoardSheet,{ types: ["counter_board"],makeDefault: true, label: "Counter Board" });
-
-  Items.unregisterSheet("core", ItemSheet);
-  Items.registerSheet("bdnd", BDNDItemSheet, { makeDefault: true });
+  const { DocumentSheetConfig } = foundry.applications.apps;
+  DocumentSheetConfig.registerSheet(Actor, SYSTEM_ID, BDNDCharacterSheet, {
+    types: ["character"], makeDefault: true, label: "Captain Sheet"
+  });
+  DocumentSheetConfig.registerSheet(Actor, SYSTEM_ID, BDNDNpcSheet, {
+    types: ["npc"], makeDefault: true, label: "NPC Sheet"
+  });
+  DocumentSheetConfig.registerSheet(Actor, SYSTEM_ID, BDNDShipSheet, {
+    types: ["ship"], makeDefault: true, label: "Ship Tracker"
+  });
+  DocumentSheetConfig.registerSheet(Actor, SYSTEM_ID, BDNDCounterBoardSheet, {
+    types: ["counter_board"], makeDefault: true, label: "Counter Board"
+  });
+  DocumentSheetConfig.registerSheet(Item, SYSTEM_ID, BDNDItemSheet, {
+    types: Object.keys(itemDataModels), makeDefault: true, label: "Item Sheet"
+  });
 
   // ── Handlebars Helpers ─────────────────────────────────────────────────────
 
@@ -150,6 +188,10 @@ Hooks.once("init", async function() {
   Handlebars.registerHelper('lt',  (a, b) => a < b);
   Handlebars.registerHelper('or',  (a, b) => a || b);
   Handlebars.registerHelper('eq',  (a, b) => a === b);
+
+  // Marks an <option> as selected when its value matches the bound field —
+  // the old AppV1 `{{#select}}` block helper was removed in V14.
+  Handlebars.registerHelper('selected', (a, b) => a === b ? 'selected' : '');
 
   // Strip HTML for tooltip text
   Handlebars.registerHelper('stripHTML', (html) => {
@@ -173,11 +215,12 @@ Hooks.once("init", async function() {
     type: String,
     default: "0.0.0"
   });
-
-  await preloadHandlebarsTemplates();
 });
 
-// ── Dice So Nice — Piece of Eight coin ─────────────────────────────────────
+/* -------------------------------------------- */
+/*  Dice So Nice — Piece of Eight coin           */
+/* -------------------------------------------- */
+
 // Registers a custom dc (coin) die preset so DSN animates the coin flip as a
 // Piece of Eight. Face 0 = Tails (wins), Face 1 = Heads.
 // Note: if the faces appear swapped in game, swap the two filenames below.
@@ -235,16 +278,19 @@ Hooks.once('diceSoNiceReady', (dice3d) => {
   });
 });
 
-// ── Combat Tracker — drag-to-reorder ────────────────────────────────────────
+/* -------------------------------------------- */
+/*  Combat Tracker — drag-to-reorder             */
+/* -------------------------------------------- */
+
 // SHAMUS uses narrative initiative: the GM decides turn order by dragging
 // combatant rows. On drop, initiative values are silently reassigned in
 // descending order so Foundry preserves the sequence across re-renders.
 // Only the GM can drag; players see the ordered list but cannot change it.
-function _enableCombatTrackerDrag($html) {
+function _enableCombatTrackerDrag(html) {
   if (!game.user?.isGM) return;
   if (!game.combat) return;
 
-  const list = $html.find('ol.combat-tracker')[0];
+  const list = html.querySelector('ol.combat-tracker');
   if (!list) return;
 
   let dragSrc = null;
@@ -305,43 +351,38 @@ function _enableCombatTrackerDrag($html) {
   });
 }
 
-// ── Combat Tracker — render hook ─────────────────────────────────────────────
+/* -------------------------------------------- */
+/*  Combat Tracker — render hook                 */
+/* -------------------------------------------- */
+
 // Injects the 🪙 coin-flip button and enables drag-to-reorder on every render.
-//
-// Foundry v12 DOM (confirmed from live inspection):
-//   html → <section id="combat" …>   (HTMLElement, not jQuery)
-//     <header class="combat-tracker-header">
-//       <div class="encounter-controls combat">
-//         <div class="control-buttons left flexrow">  ← coin button goes here
-//         …
-//     <ol class="combat-tracker">                     ← drag targets
-//       <li class="combatant" data-combatant-id="…">
+// `html` is the tracker's own root HTMLElement (ApplicationV2 render hooks pass
+// the native element, not a jQuery-wrapped one).
 Hooks.on('renderCombatTracker', (app, html) => {
-  // Foundry v12 passes a plain HTMLElement; wrap for jQuery .find() support.
-  const $html = $(html);
-
   // ── Coin flip button ──────────────────────────────────────────────────────
-  $html.find('.bdnd-coin-flip-btn').remove();
+  html.querySelector('.bdnd-coin-flip-btn')?.remove();
 
-  const btn = $(
-    `<button type="button"
-             class="inline-control combat-control bdnd-coin-flip-btn"
-             data-tooltip="SHAMUS Tiebreaker — Flip a Piece of Eight (Tails wins)"
-             aria-label="Coin Flip Tiebreaker"
-             style="flex:0 0 auto; font-style:normal;">
-       🪙
-     </button>`
-  );
-  btn.on('click', () => bdndCoinFlip());
-
-  const leftControls = $html.find('.encounter-controls .control-buttons.left');
-  if (leftControls.length) leftControls.append(btn);
+  const leftControls = html.querySelector('.encounter-controls .control-buttons.left');
+  if (leftControls) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'inline-control combat-control bdnd-coin-flip-btn';
+    btn.dataset.tooltip = 'SHAMUS Tiebreaker — Flip a Piece of Eight (Tails wins)';
+    btn.setAttribute('aria-label', 'Coin Flip Tiebreaker');
+    btn.style.cssText = 'flex:0 0 auto; font-style:normal;';
+    btn.textContent = '🪙';
+    btn.addEventListener('click', () => bdndCoinFlip());
+    leftControls.append(btn);
+  }
 
   // ── Drag-to-reorder ───────────────────────────────────────────────────────
-  _enableCombatTrackerDrag($html);
+  _enableCombatTrackerDrag(html);
 });
 
-// ── Version Migration Hook ──────────────────────────────────────────────────
+/* -------------------------------------------- */
+/*  Version Migration Hook                       */
+/* -------------------------------------------- */
+
 Hooks.once("ready", () => {
   const systemVersion = game.system.version;
   const worldVersion  = game.settings.get("bdnd", "systemMigrationVersion") ?? "0.0.0";
@@ -353,7 +394,10 @@ Hooks.once("ready", () => {
   }
 });
 
-// ── Auto Taken Out → Clutch Test prompt ────────────────────────────────────
+/* -------------------------------------------- */
+/*  Auto Taken Out → Clutch Test prompt          */
+/* -------------------------------------------- */
+
 // When a character's or NPC's Health Risk Counter reaches its maximum the GM
 // sees a chat card and is offered a button to open the Clutch Test dialog on
 // behalf of the affected actor. This mirrors the SHAMUS "Taken Out" rule:
@@ -368,12 +412,12 @@ Hooks.on('updateActor', async (actor, changes, _options, _userId) => {
   if (newVal < max) return;                            // not at max yet
 
   // Check flag so we only alert once per "hit-max" event, not on every save
-  const alreadyFlagged = await actor.getFlag('bdnd', 'healthMaxAlerted') ?? false;
+  const alreadyFlagged = actor.getFlag('bdnd', 'healthMaxAlerted') ?? false;
   if (alreadyFlagged) return;
   await actor.setFlag('bdnd', 'healthMaxAlerted', true);
 
   // Post Taken Out alert to chat
-  const isRegular = (await actor.getFlag('bdnd', 'npcType') ?? 'named') === 'regular';
+  const isRegular = (actor.getFlag('bdnd', 'npcType') ?? 'named') === 'regular';
   const outcomeText = isRegular
     ? 'This is a <strong>Regular NPC</strong> — they are immediately <strong>Taken Out</strong>.'
     : 'A <strong>Clutch Test</strong> is required — click below to roll (SHAMUS p.20).';
@@ -399,8 +443,8 @@ Hooks.on('updateActor', async (actor, changes, _options, _userId) => {
 });
 
 // Handle the Clutch Test button inside chat — delegate to the actor method
-Hooks.on('renderChatMessage', (_msg, html) => {
-  html.find('.bdnd-clutch-trigger').click(ev => {
+Hooks.on('renderChatMessageHTML', (message, html) => {
+  html.querySelector('.bdnd-clutch-trigger')?.addEventListener('click', ev => {
     const actorId = ev.currentTarget.dataset.actorId;
     const actor   = game.actors?.get(actorId);
     actor?.rollClutchTest();
@@ -417,13 +461,3 @@ Hooks.on('updateActor', async (actor, changes) => {
     await actor.unsetFlag('bdnd', 'healthMaxAlerted');
   }
 });
-
-async function preloadHandlebarsTemplates() {
-  return loadTemplates([
-    "systems/bdnd/templates/actor/actor-sheet.hbs",
-    "systems/bdnd/templates/actor/npc-sheet.hbs",
-    "systems/bdnd/templates/actor/ship-sheet.hbs",
-    "systems/bdnd/templates/actor/counter-board-sheet.hbs",
-    "systems/bdnd/templates/item/item-sheet.hbs"
-  ]);
-}

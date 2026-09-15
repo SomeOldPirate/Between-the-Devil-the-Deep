@@ -1,157 +1,154 @@
-<form class="{{cssClass}}" autocomplete="off">
-
-  {{!-- ══ HEADER ══════════════════════════════════════════════════════ --}}
-  <header class="ship-header">
-    <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" class="actor-portrait ship-portrait"/>
-    <div class="ship-header-details">
-      <div class="ship-name">
-        <input name="name" type="text" value="{{actor.name}}" placeholder="Ship Name"/>
+{{!-- ══ HEADER ══════════════════════════════════════════════════════ --}}
+<header class="ship-header">
+  <img src="{{actor.img}}" data-action="editImage" data-edit="img" title="{{actor.name}}" class="actor-portrait ship-portrait"/>
+  <div class="ship-header-details">
+    <div class="ship-name">
+      <input name="name" type="text" value="{{actor.name}}" placeholder="Ship Name"/>
+    </div>
+    <div class="ship-meta-row">
+      <div class="ship-meta-field">
+        <label>Captain:</label>
+        <input type="text" name="system.captain" value="{{system.captain}}" placeholder="Captain's name"/>
       </div>
-      <div class="ship-meta-row">
-        <div class="ship-meta-field">
-          <label>Captain:</label>
-          <input type="text" name="system.captain" value="{{system.captain}}" placeholder="Captain's name"/>
-        </div>
-        <div class="ship-meta-field">
-          <label>Class:</label>
-          <input type="text" name="system.class" value="{{system.class}}" placeholder="Sloop, Brigantine…"/>
-        </div>
+      <div class="ship-meta-field">
+        <label>Class:</label>
+        <input type="text" name="system.class" value="{{system.class}}" placeholder="Sloop, Brigantine…"/>
       </div>
     </div>
-  </header>
+  </div>
+</header>
 
-  <section class="sheet-body">
+<section class="sheet-body">
 
-    {{!-- ══ HULL & COMPLEMENT ══════════════════════════════════════════ --}}
-    <div class="sp">
-      <span class="sp-title">Hull &amp; Complement</span>
+  {{!-- ══ HULL & COMPLEMENT ══════════════════════════════════════════ --}}
+  <div class="sp">
+    <span class="sp-title">Hull &amp; Complement</span>
 
-      <div class="ship-stat-row">
-        <label class="ship-stat-label"><i class="fas fa-wind"></i> Sails <span class="field-hint">(added to Maneuver Counter Rolls)</span></label>
-        <div class="ship-stat-fields">
-          <div class="ship-stat-cell"><span class="stat-sublabel">Rating</span><input type="number" name="system.sails.rating"  value="{{system.sails.rating}}"  class="ship-stat-input"/></div>
-          <div class="ship-stat-cell"><span class="stat-sublabel">Min</span>   <input type="number" name="system.sails.min"     value="{{system.sails.min}}"     class="ship-stat-input"/></div>
-          <div class="ship-stat-cell ship-stat-current"><span class="stat-sublabel">Current</span><input type="number" name="system.sails.current" value="{{system.sails.current}}" class="ship-stat-input ship-stat-current-input"/></div>
-        </div>
-      </div>
-
-      <div class="ship-stat-row">
-        <label class="ship-stat-label"><i class="fas fa-users"></i> Hands <span class="field-hint">(crew capability thresholds)</span></label>
-        <div class="ship-stat-fields">
-          <div class="ship-stat-cell"><span class="stat-sublabel">Skeleton</span><input type="number" name="system.hands.skeleton" value="{{system.hands.skeleton}}" class="ship-stat-input"/></div>
-          <div class="ship-stat-cell"><span class="stat-sublabel">Full</span>    <input type="number" name="system.hands.full"     value="{{system.hands.full}}"     class="ship-stat-input"/></div>
-          <div class="ship-stat-cell"><span class="stat-sublabel">Battle</span>  <input type="number" name="system.hands.battle"   value="{{system.hands.battle}}"   class="ship-stat-input"/></div>
-          <div class="ship-stat-cell ship-stat-current"><span class="stat-sublabel">Current</span><input type="number" name="system.hands.current" value="{{system.hands.current}}" class="ship-stat-input ship-stat-current-input"/></div>
-        </div>
-      </div>
-
-      <div class="ship-stat-row">
-        <label class="ship-stat-label"><i class="fas fa-bomb"></i> Cannons <span class="field-hint">(modifier to Ship Shape Counter Rolls)</span></label>
-        <div class="ship-stat-fields">
-          <div class="ship-stat-cell"><span class="stat-sublabel">Base</span>   <input type="number" name="system.cannons.max"     value="{{system.cannons.max}}"     class="ship-stat-input"/></div>
-          <div class="ship-stat-cell ship-stat-current"><span class="stat-sublabel">Current</span><input type="number" name="system.cannons.current" value="{{system.cannons.current}}" class="ship-stat-input ship-stat-current-input"/></div>
-          <div class="ship-stat-cell ship-stat-action"><button type="button" class="fire-cannons"><i class="fas fa-fire"></i> Fire Broadsides</button></div>
-        </div>
-      </div>
-
-      <div class="ship-stat-row">
-        <label class="ship-stat-label"><i class="fas fa-box-open"></i> Provisions <span class="field-hint">(pool spent in sea Contests)</span></label>
-        <div class="ship-stat-fields">
-          <div class="ship-stat-cell"><span class="stat-sublabel">Base</span>   <input type="number" name="system.provisions.max"   value="{{system.provisions.max}}"   class="ship-stat-input"/></div>
-          <div class="ship-stat-cell ship-stat-current"><span class="stat-sublabel">Current</span><input type="number" name="system.provisions.value" value="{{system.provisions.value}}" class="ship-stat-input ship-stat-current-input"/></div>
-        </div>
-      </div>
-
-    </div>
-
-    {{!-- ══ STORES & CARGO ═════════════════════════════════════════════ --}}
-    <div class="sp">
-      <span class="sp-title">Stores &amp; Cargo</span>
-      <div class="ship-minor-row">
-        <div class="ship-minor-cell">
-          <label><i class="fas fa-shield-alt"></i> Armor <span class="field-hint">(subtracted from Ship Shape rolls)</span></label>
-          <input type="number" name="system.armor" value="{{system.armor}}" class="ship-stat-input ship-minor-input"/>
-        </div>
-        <div class="ship-minor-cell ship-cargo-cell">
-          <label><i class="fas fa-boxes"></i> Cargo</label>
-          <div class="cargo-row">
-            <div class="cargo-field"><span class="stat-sublabel">Max</span><input type="text" name="system.cargo.max"     value="{{system.cargo.max}}"     class="ship-stat-input" placeholder="0"/></div>
-            <span class="sep">/</span>
-            <div class="cargo-field"><span class="stat-sublabel">Current</span><input type="text" name="system.cargo.current" value="{{system.cargo.current}}" class="ship-stat-input" placeholder="0"/></div>
-          </div>
-        </div>
-        <div class="ship-minor-cell">
-          <label><i class="fas fa-coins"></i> Booty</label>
-          <input type="number" name="system.booty.value" value="{{system.booty.value}}" class="ship-stat-input booty-input"/>
-          <button type="button" class="payout-btn"><i class="fas fa-hand-holding-usd"></i> Divide Plunder</button>
-        </div>
+    <div class="ship-stat-row">
+      <label class="ship-stat-label"><i class="fas fa-wind"></i> Sails <span class="field-hint">(added to Maneuver Counter Rolls)</span></label>
+      <div class="ship-stat-fields">
+        <div class="ship-stat-cell"><span class="stat-sublabel">Rating</span><input type="number" name="system.sails.rating"  value="{{system.sails.rating}}"  class="ship-stat-input"/></div>
+        <div class="ship-stat-cell"><span class="stat-sublabel">Min</span>   <input type="number" name="system.sails.min"     value="{{system.sails.min}}"     class="ship-stat-input"/></div>
+        <div class="ship-stat-cell ship-stat-current"><span class="stat-sublabel">Current</span><input type="number" name="system.sails.current" value="{{system.sails.current}}" class="ship-stat-input ship-stat-current-input"/></div>
       </div>
     </div>
 
-    {{!-- ══ MANEUVER COUNTER ═══════════════════════════════════════════ --}}
-    <div class="sp sp-tracker">
-      <span class="sp-title">Maneuver Counter</span>
-      <div class="tracker-inner maneuver-tracker">
-        <div class="tracker-header">
-          <div class="counter-controls">
-            <a class="counter-dec" data-target="system.counters.maneuver.value"><i class="fas fa-minus-circle"></i></a>
-            <span class="counter-value">{{system.counters.maneuver.value}} / {{system.counters.maneuver.max}}</span>
-            <a class="counter-inc" data-target="system.counters.maneuver.value"><i class="fas fa-plus-circle"></i></a>
-            <a class="counter-risk-roll" data-target="system.counters.maneuver.value" data-label="Maneuver"><i class="fas fa-dice"></i> 1d6+Sails</a>
-          </div>
+    <div class="ship-stat-row">
+      <label class="ship-stat-label"><i class="fas fa-users"></i> Hands <span class="field-hint">(crew capability thresholds)</span></label>
+      <div class="ship-stat-fields">
+        <div class="ship-stat-cell"><span class="stat-sublabel">Skeleton</span><input type="number" name="system.hands.skeleton" value="{{system.hands.skeleton}}" class="ship-stat-input"/></div>
+        <div class="ship-stat-cell"><span class="stat-sublabel">Full</span>    <input type="number" name="system.hands.full"     value="{{system.hands.full}}"     class="ship-stat-input"/></div>
+        <div class="ship-stat-cell"><span class="stat-sublabel">Battle</span>  <input type="number" name="system.hands.battle"   value="{{system.hands.battle}}"   class="ship-stat-input"/></div>
+        <div class="ship-stat-cell ship-stat-current"><span class="stat-sublabel">Current</span><input type="number" name="system.hands.current" value="{{system.hands.current}}" class="ship-stat-input ship-stat-current-input"/></div>
+      </div>
+    </div>
+
+    <div class="ship-stat-row">
+      <label class="ship-stat-label"><i class="fas fa-bomb"></i> Cannons <span class="field-hint">(modifier to Ship Shape Counter Rolls)</span></label>
+      <div class="ship-stat-fields">
+        <div class="ship-stat-cell"><span class="stat-sublabel">Base</span>   <input type="number" name="system.cannons.max"     value="{{system.cannons.max}}"     class="ship-stat-input"/></div>
+        <div class="ship-stat-cell ship-stat-current"><span class="stat-sublabel">Current</span><input type="number" name="system.cannons.current" value="{{system.cannons.current}}" class="ship-stat-input ship-stat-current-input"/></div>
+        <div class="ship-stat-cell ship-stat-action"><button type="button" data-action="fireCannons"><i class="fas fa-fire"></i> Fire Broadsides</button></div>
+      </div>
+    </div>
+
+    <div class="ship-stat-row">
+      <label class="ship-stat-label"><i class="fas fa-box-open"></i> Provisions <span class="field-hint">(pool spent in sea Contests)</span></label>
+      <div class="ship-stat-fields">
+        <div class="ship-stat-cell"><span class="stat-sublabel">Base</span>   <input type="number" name="system.provisions.max"   value="{{system.provisions.max}}"   class="ship-stat-input"/></div>
+        <div class="ship-stat-cell ship-stat-current"><span class="stat-sublabel">Current</span><input type="number" name="system.provisions.value" value="{{system.provisions.value}}" class="ship-stat-input ship-stat-current-input"/></div>
+      </div>
+    </div>
+
+  </div>
+
+  {{!-- ══ STORES & CARGO ═════════════════════════════════════════════ --}}
+  <div class="sp">
+    <span class="sp-title">Stores &amp; Cargo</span>
+    <div class="ship-minor-row">
+      <div class="ship-minor-cell">
+        <label><i class="fas fa-shield-alt"></i> Armor <span class="field-hint">(subtracted from Ship Shape rolls)</span></label>
+        <input type="number" name="system.armor" value="{{system.armor}}" class="ship-stat-input ship-minor-input"/>
+      </div>
+      <div class="ship-minor-cell ship-cargo-cell">
+        <label><i class="fas fa-boxes"></i> Cargo</label>
+        <div class="cargo-row">
+          <div class="cargo-field"><span class="stat-sublabel">Max</span><input type="text" name="system.cargo.max"     value="{{system.cargo.max}}"     class="ship-stat-input" placeholder="0"/></div>
+          <span class="sep">/</span>
+          <div class="cargo-field"><span class="stat-sublabel">Current</span><input type="text" name="system.cargo.current" value="{{system.cargo.current}}" class="ship-stat-input" placeholder="0"/></div>
         </div>
-        <div class="tracker-bar-wrap"><div class="tracker-bar maneuver-bar" style="width:{{pct.maneuver}}%;"></div></div>
-        <div class="tracker-label">{{labels.maneuver}}</div>
+      </div>
+      <div class="ship-minor-cell">
+        <label><i class="fas fa-coins"></i> Booty</label>
+        <input type="number" name="system.booty.value" value="{{system.booty.value}}" class="ship-stat-input booty-input"/>
+        <button type="button" data-action="payout"><i class="fas fa-hand-holding-usd"></i> Divide Plunder</button>
       </div>
     </div>
+  </div>
 
-    {{!-- ══ SHIP SHAPE COUNTER ══════════════════════════════════════════ --}}
-    <div class="sp sp-tracker">
-      <span class="sp-title">Ship Shape Counter</span>
-      <div class="tracker-inner shape-tracker">
-        <div class="tracker-header">
-          <div class="counter-controls">
-            <a class="counter-dec" data-target="system.counters.ship_shape.value"><i class="fas fa-minus-circle"></i></a>
-            <span class="counter-value">{{system.counters.ship_shape.value}} / {{system.counters.ship_shape.max}}</span>
-            <a class="counter-inc" data-target="system.counters.ship_shape.value"><i class="fas fa-plus-circle"></i></a>
-            <a class="counter-risk-roll" data-target="system.counters.ship_shape.value" data-label="Ship Shape"><i class="fas fa-dice"></i> 1d6+Cannons</a>
-          </div>
+  {{!-- ══ MANEUVER COUNTER ═══════════════════════════════════════════ --}}
+  <div class="sp sp-tracker">
+    <span class="sp-title">Maneuver Counter</span>
+    <div class="tracker-inner maneuver-tracker">
+      <div class="tracker-header">
+        <div class="counter-controls">
+          <a data-action="counterDec" data-target="system.counters.maneuver.value"><i class="fas fa-minus-circle"></i></a>
+          <span class="counter-value">{{system.counters.maneuver.value}} / {{system.counters.maneuver.max}}</span>
+          <a data-action="counterInc" data-target="system.counters.maneuver.value"><i class="fas fa-plus-circle"></i></a>
+          <a data-action="counterRiskRoll" data-target="system.counters.maneuver.value" data-label="Maneuver"><i class="fas fa-dice"></i> 1d6+Sails</a>
         </div>
-        <div class="tracker-bar-wrap"><div class="tracker-bar shape-bar" style="width:{{pct.shape}}%;"></div></div>
-        <div class="tracker-label shape-label">{{labels.shape}}</div>
       </div>
+      <div class="tracker-bar-wrap"><div class="tracker-bar maneuver-bar" style="width:{{pct.maneuver}}%;"></div></div>
+      <div class="tracker-label">{{labels.maneuver}}</div>
     </div>
+  </div>
 
-    {{!-- ══ BOARDING COUNTER ════════════════════════════════════════════ --}}
-    <div class="sp sp-tracker">
-      <span class="sp-title">Boarding Counter</span>
-      <div class="tracker-inner boarding-tracker">
-        <div class="tracker-header">
-          <div class="counter-controls">
-            <a class="counter-dec" data-target="system.counters.boarding.value"><i class="fas fa-minus-circle"></i></a>
-            <span class="counter-value">{{system.counters.boarding.value}} / {{system.counters.boarding.max}}</span>
-            <a class="counter-inc" data-target="system.counters.boarding.value"><i class="fas fa-plus-circle"></i></a>
-            <a class="counter-risk-roll" data-target="system.counters.boarding.value" data-label="Boarding"><i class="fas fa-dice"></i> 1d6</a>
-          </div>
+  {{!-- ══ SHIP SHAPE COUNTER ══════════════════════════════════════════ --}}
+  <div class="sp sp-tracker">
+    <span class="sp-title">Ship Shape Counter</span>
+    <div class="tracker-inner shape-tracker">
+      <div class="tracker-header">
+        <div class="counter-controls">
+          <a data-action="counterDec" data-target="system.counters.ship_shape.value"><i class="fas fa-minus-circle"></i></a>
+          <span class="counter-value">{{system.counters.ship_shape.value}} / {{system.counters.ship_shape.max}}</span>
+          <a data-action="counterInc" data-target="system.counters.ship_shape.value"><i class="fas fa-plus-circle"></i></a>
+          <a data-action="counterRiskRoll" data-target="system.counters.ship_shape.value" data-label="Ship Shape"><i class="fas fa-dice"></i> 1d6+Cannons</a>
         </div>
-        <div class="tracker-bar-wrap"><div class="tracker-bar boarding-bar" style="width:{{pct.boarding}}%;"></div></div>
-        <div class="tracker-label">{{labels.boarding}}</div>
       </div>
+      <div class="tracker-bar-wrap"><div class="tracker-bar shape-bar" style="width:{{pct.shape}}%;"></div></div>
+      <div class="tracker-label shape-label">{{labels.shape}}</div>
     </div>
+  </div>
 
-    {{!-- ══ MODIFICATIONS & LOG ════════════════════════════════════════ --}}
-    <div class="ship-lower-grid">
-      <div class="sp" style="margin-bottom:0;">
-        <span class="sp-title">Modifications &amp; Specials</span>
-        <textarea name="system.modifications" class="biography-field ship-mods"
-                  placeholder="Spikes, Extra Cannons, Hauling Tack bonuses…">{{system.modifications}}</textarea>
+  {{!-- ══ BOARDING COUNTER ════════════════════════════════════════════ --}}
+  <div class="sp sp-tracker">
+    <span class="sp-title">Boarding Counter</span>
+    <div class="tracker-inner boarding-tracker">
+      <div class="tracker-header">
+        <div class="counter-controls">
+          <a data-action="counterDec" data-target="system.counters.boarding.value"><i class="fas fa-minus-circle"></i></a>
+          <span class="counter-value">{{system.counters.boarding.value}} / {{system.counters.boarding.max}}</span>
+          <a data-action="counterInc" data-target="system.counters.boarding.value"><i class="fas fa-plus-circle"></i></a>
+          <a data-action="counterRiskRoll" data-target="system.counters.boarding.value" data-label="Boarding"><i class="fas fa-dice"></i> 1d6</a>
+        </div>
       </div>
-      <div class="sp" style="margin-bottom:0;">
-        <span class="sp-title">Ship's Log</span>
-        <textarea name="system.biography" class="biography-field"
-                  placeholder="Record the voyages, plunder, and tragedies…">{{system.biography}}</textarea>
-      </div>
+      <div class="tracker-bar-wrap"><div class="tracker-bar boarding-bar" style="width:{{pct.boarding}}%;"></div></div>
+      <div class="tracker-label">{{labels.boarding}}</div>
     </div>
+  </div>
 
-  </section>
-</form>
+  {{!-- ══ MODIFICATIONS & LOG ════════════════════════════════════════ --}}
+  <div class="ship-lower-grid">
+    <div class="sp" style="margin-bottom:0;">
+      <span class="sp-title">Modifications &amp; Specials</span>
+      <textarea name="system.modifications" class="biography-field ship-mods"
+                placeholder="Spikes, Extra Cannons, Hauling Tack bonuses…">{{system.modifications}}</textarea>
+    </div>
+    <div class="sp" style="margin-bottom:0;">
+      <span class="sp-title">Ship's Log</span>
+      <textarea name="system.biography" class="biography-field"
+                placeholder="Record the voyages, plunder, and tragedies…">{{system.biography}}</textarea>
+    </div>
+  </div>
+
+</section>

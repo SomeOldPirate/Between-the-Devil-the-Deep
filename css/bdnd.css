@@ -8,8 +8,8 @@
 
 /* ── Window Base ───────────────────────────────────────────── */
 
-.system-bdnd .window-app.bdnd .window-content,
-.vtt .window-app.bdnd .window-content {
+.system-bdnd .application.bdnd .window-content,
+.vtt .application.bdnd .window-content {
   background: #f4ecd8;
   background-image: radial-gradient(circle, #f9f4e8 20%, #ebdcb3 100%);
   color: #3e2b1d;
@@ -20,8 +20,7 @@
 }
 
 /* Ensure the sheet form itself doesn't add extra top margin */
-.bdnd.bdnd-pc-sheet,
-.bdnd form.bdnd-pc-sheet {
+.bdnd.captain-sheet .window-content {
   padding-top: 0;
   margin-top: 0;
 }
@@ -1230,8 +1229,8 @@
 
 /* ══ DIALOG THEMING ════════════════════════════════════════════════ */
 
-/* Target all dialogs while this system is active */
-.system-bdnd .app.dialog {
+/* Target our DialogV2 prompts (classes: ["bdnd-dialog"]) while this system is active */
+.system-bdnd .bdnd-dialog {
   background: #f5edd8;
   border: 2px solid #5a3d2b;
   border-radius: 4px;
@@ -1241,28 +1240,28 @@
 }
 
 /* Title bar — dark timber with gold rule */
-.system-bdnd .app.dialog .window-header {
+.system-bdnd .bdnd-dialog .window-header {
   background: #3e2b1d;
   border-bottom: 2px solid #8b6914;
   border-radius: 2px 2px 0 0;
   padding: 5px 10px;
 }
-.system-bdnd .app.dialog .window-title {
+.system-bdnd .bdnd-dialog .window-title {
   font-family: 'IM Fell English SC', serif;
   font-size: 0.95em;
   color: #f0dfa0;
   letter-spacing: 1px;
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
-.system-bdnd .app.dialog .header-button {
+.system-bdnd .bdnd-dialog .header-control {
   color: #c2a87a;
   opacity: 0.75;
   transition: opacity 0.12s;
 }
-.system-bdnd .app.dialog .header-button:hover { opacity: 1; }
+.system-bdnd .bdnd-dialog .header-control:hover { opacity: 1; }
 
 /* Body — flat parchment */
-.system-bdnd .app.dialog .window-content {
+.system-bdnd .bdnd-dialog .window-content {
   background: #f5edd8;
   padding: 14px 14px 10px !important;
   font-family: 'Crimson Text', 'Book Antiqua', Palatino, serif;
@@ -1271,7 +1270,7 @@
 }
 
 /* Buttons footer — dark timber matching header */
-.system-bdnd .app.dialog .dialog-buttons {
+.system-bdnd .bdnd-dialog .form-footer {
   background: #3e2b1d;
   border-top: 2px solid #8b6914;
   padding: 7px 10px;
@@ -1279,7 +1278,7 @@
   gap: 6px;
   justify-content: flex-end;
 }
-.system-bdnd .app.dialog .dialog-buttons button {
+.system-bdnd .bdnd-dialog .form-footer button {
   font-family: 'IM Fell English SC', serif;
   font-size: 0.9em;
   letter-spacing: 0.5px;
@@ -1290,17 +1289,16 @@
   transition: filter 0.12s;
   box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
-.system-bdnd .app.dialog .dialog-buttons button:hover { filter: brightness(1.15); }
+.system-bdnd .bdnd-dialog .form-footer button:hover { filter: brightness(1.15); }
 
 /* Primary action button (first / default) */
-.system-bdnd .app.dialog .dialog-buttons button.default,
-.system-bdnd .app.dialog .dialog-buttons button:first-child {
+.system-bdnd .bdnd-dialog .form-footer button:first-child {
   background: #8b0000;
   border-color: #600000;
   color: #f5edd8;
 }
 /* Secondary / cancel buttons */
-.system-bdnd .app.dialog .dialog-buttons button:not(:first-child) {
+.system-bdnd .bdnd-dialog .form-footer button:not(:first-child) {
   background: rgba(90,61,43,0.2);
   border-color: #8c6d53;
   color: #f0dfa0;
@@ -1587,7 +1585,7 @@
 
 /* ══ COUNTER BOARD SHEET ════════════════════════════════════════ */
 
-.bdnd.counter-board .bdnd-counter-board {
+.bdnd.counter-board .window-content {
   display: flex;
   flex-direction: column;
   gap: 10px;

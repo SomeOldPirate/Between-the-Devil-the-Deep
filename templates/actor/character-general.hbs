@@ -1,0 +1,66 @@
+<div class="tab {{tab.cssClass}}" data-tab="general" data-group="primary" data-application-part="general">
+
+  <div class="tab-toolbar flexrow">
+    <a data-action="toggleAbilities"><i class="fas fa-eye"></i>
+      {{#if showAllAbilities}}Hide Unrated{{else}}Show All Skills{{/if}}
+    </a>
+    <a data-action="rollContest"><i class="fas fa-swords"></i> Contest</a>
+    <a data-action="rollCooperation"><i class="fas fa-people-carry"></i> Cooperate</a>
+    <a data-action="rollFlee" title="Fleeing — Athletics test, TN 6 + number of foes (SHAMUS p.21)"><i class="fas fa-person-running"></i> Flee!</a>
+    <a data-action="refreshEvent"><i class="fas fa-undo"></i> Refresh</a>
+    <span class="bp-display" title="Build Points available for advancement">BP: {{system.build_points.value}}</span>
+  </div>
+
+  {{#if (eq generalAbilities.length 0)}}
+  <p class="empty-hint">No abilities rated — click <em>Show All Skills</em> to view and assign ratings.</p>
+  {{/if}}
+
+  <div class="sp sp-abilities"><span class="sp-title">General Abilities</span>
+  <table class="ability-table">
+    <thead>
+      <tr><th>Ability</th><th>Rating</th><th>Pool</th><th></th></tr>
+    </thead>
+    <tbody>
+      {{#each generalAbilities as |ability|}}
+      <tr>
+        <td><a data-action="rollGeneral" data-key="{{ability.key}}" class="ability-roll-label">{{ability.label}}</a></td>
+        <td><input type="number" name="system.abilities.general.{{ability.key}}.rating" value="{{ability.rating}}"/></td>
+        <td><input type="number" name="system.abilities.general.{{ability.key}}.value"  value="{{ability.value}}" class="pool-input"/></td>
+        <td>
+          {{#if (eq ability.key "medicine")}}<a data-action="useMedicine" title="Use Medicine — 1pt heals 3 Health Counter (ally) or 1 Health Counter (self) — SHAMUS p.21"><i class="fas fa-kit-medical"></i></a>{{/if}}
+          {{#if ../system.build_points.value}}<a data-action="raiseRating" data-type="general" data-key="{{ability.key}}" title="Spend 1 Build Point to raise {{ability.label}} Rating"><i class="fas fa-arrow-up"></i></a>{{/if}}
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  </div>
+
+  {{!-- CHERRIES ──────────────────────────────────────────────── --}}
+  <div class="sp">
+    <span class="sp-title">★ Cherries <a data-action="itemCreate" data-type="cherry" class="sp-add"><i class="fas fa-plus"></i></a></span>
+  {{#if cherries.length}}
+  <ul class="item-list cherry-list">
+    {{#each cherries as |item|}}
+    <li class="item flexrow cherry-item" data-item-id="{{item._id}}">
+      <span class="cherry-star">★</span>
+      <div class="cherry-details">
+        <span class="cherry-name">{{item.name}}</span>
+        <span class="cherry-ability">({{item.system.abilityLabel}})</span>
+        {{#if item.system.health_max_bonus}}<span class="cherry-badge health-badge">+{{item.system.health_max_bonus}} Health Max</span>{{/if}}
+        {{#if item.system.stability_max_bonus}}<span class="cherry-badge stability-badge">+{{item.system.stability_max_bonus}} Stability Max</span>{{/if}}
+        {{#if item.system.has_post_roll_spend}}<span class="cherry-badge post-roll-badge">Post-roll spend</span>{{/if}}
+      </div>
+      <div class="item-controls">
+        <a data-action="itemEdit" title="Edit"><i class="fas fa-edit"></i></a>
+        <a data-action="itemDelete" title="Remove"><i class="fas fa-trash"></i></a>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="empty-hint">No Cherries yet — abilities with Rating ≥ 5 may have one.</p>
+  {{/if}}
+  </div>
+
+</div>

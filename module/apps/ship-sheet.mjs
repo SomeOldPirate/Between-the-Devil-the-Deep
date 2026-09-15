@@ -1,34 +1,67 @@
-export class BDNDShipSheet extends ActorSheet {
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      template: "systems/bdnd/templates/actor/ship-sheet.hbs",
-      classes: ["bdnd", "sheet", "ship"],
-      width: 700,
-      height: 760,
-      tabs: []
-    });
-  }
+/**
+ * The ship tracker sheet.
+ * @module bdnd/apps/ship-sheet
+ */
 
-  getData() {
-    const context = super.getData();
-    context.system = this.actor.system;
+import { SYSTEM_ID } from "../config.mjs";
+
+const { DialogV2, HandlebarsApplicationMixin } = foundry.applications.api;
+const { ActorSheetV2 } = foundry.applications.sheets;
+const { FormDataExtended } = foundry.applications.ux;
+
+/**
+ * @extends {ActorSheetV2}
+ */
+export default class BDNDShipSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
+
+  /** @inheritdoc */
+  static DEFAULT_OPTIONS = {
+    id: "bdnd-ship-{id}",
+    classes: ["bdnd", "sheet", "ship"],
+    position: { width: 700, height: 760 },
+    window: { resizable: true, icon: "fa-solid fa-ship" },
+    form: { submitOnChange: true, closeOnSubmit: false },
+    actions: {
+      counterInc: BDNDShipSheet.#onCounterIncrease,
+      counterDec: BDNDShipSheet.#onCounterDecrease,
+      counterRiskRoll: BDNDShipSheet.#onRiskCounterRoll,
+      payout: BDNDShipSheet.#onPayout,
+      fireCannons: BDNDShipSheet.#onFireCannons
+    }
+  };
+
+  /** @inheritdoc */
+  static PARTS = {
+    body: { template: `systems/${SYSTEM_ID}/templates/actor/ship-sheet.hbs`, root: true, scrollable: [""] }
+  };
+
+  /** @inheritdoc */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    const actor = this.actor;
+    const system = actor.system;
+    context.actor = actor;
+    context.system = system;
+    context.editable = this.isEditable;
+    context.fields = system.schema.fields;
+
     context.labels = {
-      boarding: this._getBoardingLabel(context.system.counters.boarding.value),
-      shape:    this._getShapeLabel(context.system.counters.ship_shape.value),
-      maneuver: this._getManeuverLabel(context.system.counters.maneuver.value)
+      boarding: this.constructor.getBoardingLabel(system.counters.boarding.value),
+      shape:    this.constructor.getShapeLabel(system.counters.ship_shape.value),
+      maneuver: this.constructor.getManeuverLabel(system.counters.maneuver.value)
     };
     const pct = (v, m) => Math.min(100, Math.max(0, Math.round((v / (m || 1)) * 100)));
     context.pct = {
-      maneuver: pct(context.system.counters.maneuver.value,   context.system.counters.maneuver.max),
-      shape:    pct(context.system.counters.ship_shape.value, context.system.counters.ship_shape.max),
-      boarding: pct(context.system.counters.boarding.value,   context.system.counters.boarding.max)
+      maneuver: pct(system.counters.maneuver.value,   system.counters.maneuver.max),
+      shape:    pct(system.counters.ship_shape.value, system.counters.ship_shape.max),
+      boarding: pct(system.counters.boarding.value,   system.counters.boarding.max)
     };
     return context;
   }
 
   /* --- STATUS LABEL HELPERS (SHAMUS rules text) --- */
 
-  _getManeuverLabel(val) {
+  static getManeuverLabel(val) {
     if (val >= 36) return "Into the Deep Blue — escape if Sails > Min; otherwise reset to [10] vs opponent [4].";
     if (val >= 30) return "Leeward Boarding — may start boarding.";
     if (val >= 24) return "(TN4) Under/Outer Position — fire Broadsides without retaliation until opponent matches.";
@@ -42,7 +75,7 @@ export class BDNDShipSheet extends ActorSheet {
     return "Base — Sails on the horizon.";
   }
 
-  _getBoardingLabel(val) {
+  static getBoardingLabel(val) {
     if (val >= 20) return "Takeover.";
     if (val >= 16) return "Sweep Up — situation dire, no Broadside Actions. −2d6 Hands.";
     if (val >= 12) return "Exploitation — enemy gains Flanking Advantage. −d6 Hands.";
@@ -51,7 +84,7 @@ export class BDNDShipSheet extends ActorSheet {
     return "Base — ships at Point Blank range.";
   }
 
-  _getShapeLabel(val) {
+  static getShapeLabel(val) {
     if (val >= 40) return "⚠ ABANDON SHIP!";
     if (val >= 34) return "Immobilised — no Movement Counter Rolls until repaired.";
     if (val >= 30) return "Casualties — −1d6 Hands and (−d6 Sails or −2 Cannons).";
@@ -66,32 +99,23 @@ export class BDNDShipSheet extends ActorSheet {
   }
 
   /* -------------------------------------------- */
+  /*  Actions                                     */
+  /* -------------------------------------------- */
 
-  activateListeners(html) {
-    super.activateListeners(html);
+  static async #onCounterIncrease(event, target) {
     if (!this.isEditable) return;
-
-    html.find('.counter-inc').click(this._onCounterIncrease.bind(this));
-    html.find('.counter-dec').click(this._onCounterDecrease.bind(this));
-    html.find('.counter-risk-roll').click(this._onRiskCounterRoll.bind(this));
-    html.find('.payout-btn').click(this._onPayout.bind(this));
-    html.find('.fire-cannons').click(this._onFireCannons.bind(this));
-  }
-
-  async _onCounterIncrease(event) {
-    event.preventDefault();
-    const target = event.currentTarget.dataset.target;
-    const current = foundry.utils.getProperty(this.actor, target) ?? 0;
-    const maxPath = target.replace('.value', '.max');
+    const path = target.dataset.target;
+    const current = foundry.utils.getProperty(this.actor, path) ?? 0;
+    const maxPath = path.replace(".value", ".max");
     const max = foundry.utils.getProperty(this.actor, maxPath) ?? 999;
-    await this.actor.update({ [target]: Math.min(max, current + 1) });
+    await this.actor.update({ [path]: Math.min(max, current + 1) });
   }
 
-  async _onCounterDecrease(event) {
-    event.preventDefault();
-    const target = event.currentTarget.dataset.target;
-    const current = foundry.utils.getProperty(this.actor, target) ?? 0;
-    await this.actor.update({ [target]: Math.max(0, current - 1) });
+  static async #onCounterDecrease(event, target) {
+    if (!this.isEditable) return;
+    const path = target.dataset.target;
+    const current = foundry.utils.getProperty(this.actor, path) ?? 0;
+    await this.actor.update({ [path]: Math.max(0, current - 1) });
   }
 
   /**
@@ -101,22 +125,22 @@ export class BDNDShipSheet extends ActorSheet {
    *   modifier entered via dialog since we can't auto-read the enemy sheet
    * - Boarding: 1d6 (no ship modifier)
    */
-  async _onRiskCounterRoll(event) {
-    event.preventDefault();
-    const target = event.currentTarget.dataset.target;
-    const label  = event.currentTarget.dataset.label ?? "Counter";
+  static async #onRiskCounterRoll(event, target) {
+    if (!this.isEditable) return;
+    const path  = target.dataset.target;
+    const label = target.dataset.label ?? "Counter";
 
     // Determine the ship's own modifier for this counter type
-    const isManeuver  = target.includes('maneuver');
-    const isShipShape = target.includes('ship_shape');
+    const isManeuver  = path.includes("maneuver");
+    const isShipShape = path.includes("ship_shape");
 
     let autoMod = 0;
-    let modLabel = '';
+    let modLabel = "";
     let modDialog = false;
 
     if (isManeuver) {
       autoMod  = this.actor.system.sails?.current ?? this.actor.system.sails?.rating ?? 0;
-      modLabel = `Sails (${autoMod >= 0 ? '+' : ''}${autoMod})`;
+      modLabel = `Sails (${autoMod >= 0 ? "+" : ""}${autoMod})`;
     } else if (isShipShape) {
       // Ship Shape advances from the *opponent's* Cannons — must ask
       modDialog = true;
@@ -125,45 +149,42 @@ export class BDNDShipSheet extends ActorSheet {
     // For Ship Shape, ask for the opponent's Cannons modifier
     let finalMod = autoMod;
     if (modDialog) {
-      const dialogMod = await new Promise((resolve) => {
-        new Dialog({
-          title: `${label} Counter Advance`,
-          content: `
-            <form class="bdnd-dialog">
-              <p class="bdnd-rule-note">Enter the <strong>opponent's current Cannons</strong> value
-              — this is added to the 1d6 roll per SHAMUS rules.</p>
-              <div class="form-group">
-                <label>Opponent's Cannons:</label>
-                <input type="number" name="mod" value="0" min="-10" max="20" autofocus/>
-              </div>
-            </form>
-          `,
-          buttons: {
-            roll: {
-              label: "Roll",
-              icon: "<i class='fas fa-dice'></i>",
-              callback: (html) => resolve(parseInt(html.find('[name="mod"]').val()) || 0)
-            }
-          },
-          default: "roll",
-          close: () => resolve(null)
-        }).render(true);
+      const dialogMod = await DialogV2.prompt({
+        window: { title: `${label} Counter Advance` },
+        classes: ["bdnd-dialog"],
+        position: { width: 380 },
+        content: `
+          <form class="bdnd-dialog">
+            <p class="bdnd-rule-note">Enter the <strong>opponent's current Cannons</strong> value
+            — this is added to the 1d6 roll per SHAMUS rules.</p>
+            <div class="form-group">
+              <label>Opponent's Cannons:</label>
+              <input type="number" name="mod" value="0" min="-10" max="20" autofocus/>
+            </div>
+          </form>
+        `,
+        ok: {
+          label: "Roll",
+          icon: "fas fa-dice",
+          callback: (ev, button) => parseInt(new FormDataExtended(button.form).object.mod) || 0
+        },
+        rejectClose: false
       });
       if (dialogMod === null) return;
       finalMod = dialogMod;
-      modLabel = `Opponent Cannons (${finalMod >= 0 ? '+' : ''}${finalMod})`;
+      modLabel = `Opponent Cannons (${finalMod >= 0 ? "+" : ""}${finalMod})`;
     }
 
     const formula = finalMod !== 0 ? `1d6 + @mod` : `1d6`;
     const roll = new Roll(formula, { mod: finalMod });
     await roll.evaluate();
 
-    const current  = foundry.utils.getProperty(this.actor, target) ?? 0;
-    const maxPath  = target.replace('.value', '.max');
+    const current  = foundry.utils.getProperty(this.actor, path) ?? 0;
+    const maxPath  = path.replace(".value", ".max");
     const max      = foundry.utils.getProperty(this.actor, maxPath) ?? 999;
     const newValue = Math.min(max, current + roll.total);
 
-    await this.actor.update({ [target]: newValue });
+    await this.actor.update({ [path]: newValue });
 
     let breakdownHTML = `<div class="bdnd-breakdown-row"><span>Dice Roll:</span><strong>${roll.total}</strong></div>`;
     if (modLabel) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>${modLabel}:</span><strong>included above</strong></div>`;
@@ -177,11 +198,11 @@ export class BDNDShipSheet extends ActorSheet {
         : [4, 8, 12, 16, 20]; // boarding
     const crossed = thresholds.filter(t => t > current && t <= newValue);
     if (crossed.length) {
-      breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Thresholds crossed:</span><strong>${crossed.join(', ')}</strong></div>`;
+      breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Thresholds crossed:</span><strong>${crossed.join(", ")}</strong></div>`;
       for (const t of crossed) {
-        const lbl = isManeuver ? this._getManeuverLabel(t)
-                  : isShipShape ? this._getShapeLabel(t)
-                  : this._getBoardingLabel(t);
+        const lbl = isManeuver ? this.constructor.getManeuverLabel(t)
+                  : isShipShape ? this.constructor.getShapeLabel(t)
+                  : this.constructor.getBoardingLabel(t);
         breakdownHTML += `<div class="bdnd-threshold-note"><span class="threshold-level">${t}:</span> ${lbl}</div>`;
       }
     }
@@ -196,7 +217,6 @@ export class BDNDShipSheet extends ActorSheet {
           <div class="roll-details">${breakdownHTML}</div>
         </div>
       `,
-      type: ChatMessage.TYPES.ROLL,
       rolls: [roll]
     });
   }
@@ -206,8 +226,8 @@ export class BDNDShipSheet extends ActorSheet {
    * The number of cannons may influence the GM's damage ruling but the
    * resolution is a single 1d6 + Approach + Spend roll.
    */
-  async _onFireCannons(event) {
-    event.preventDefault();
+  static async #onFireCannons() {
+    if (!this.isEditable) return;
     const cannons = this.actor.system.cannons.current ?? 0;
     if (cannons <= 0) return ui.notifications.warn("This ship has no cannons!");
 
@@ -220,41 +240,38 @@ export class BDNDShipSheet extends ActorSheet {
       // Delegate to the captain's rollGeneralAbility for a proper SHAMUS test
       ui.notifications.info(`Rolling Artillery for ${captainActor.name}…`);
       return captainActor.rollGeneralAbility("artillery", {
-        title: `Broadside (${cannons} cannon${cannons !== 1 ? 's' : ''})`
+        title: `Broadside (${cannons} cannon${cannons !== 1 ? "s" : ""})`
       });
     }
 
     // Fallback: plain dialog with no ability tracking
-    const dialogResult = await new Promise((resolve) => {
-      new Dialog({
-        title: "Fire Broadsides",
-        content: `
-          <form class="bdnd-dialog">
-            <p class="bdnd-rule-note">Artillery test: 1d6 + Approach + Spend vs GM-set TN.<br>
-            <em>Tip: link a Captain actor to enable full ability tracking.</em></p>
-            <div class="form-group">
-              <label>Target Number (TN):</label>
-              <input type="number" name="tn" value="5" min="2" max="10" autofocus/>
-            </div>
-            <div class="form-group">
-              <label>Modifier (Approach + Spend combined):</label>
-              <input type="number" name="mod" value="0" min="-5" max="20"/>
-            </div>
-          </form>
-        `,
-        buttons: {
-          roll: {
-            label: `Fire! (${cannons} cannon${cannons !== 1 ? 's' : ''})`,
-            icon: "<i class='fas fa-fire'></i>",
-            callback: (html) => resolve({
-              tn: parseInt(html.find('[name="tn"]').val()) || 5,
-              mod: parseInt(html.find('[name="mod"]').val()) || 0
-            })
-          }
-        },
-        default: "roll",
-        close: () => resolve(null)
-      }).render(true);
+    const dialogResult = await DialogV2.prompt({
+      window: { title: "Fire Broadsides" },
+      classes: ["bdnd-dialog"],
+      position: { width: 380 },
+      content: `
+        <form class="bdnd-dialog">
+          <p class="bdnd-rule-note">Artillery test: 1d6 + Approach + Spend vs GM-set TN.<br>
+          <em>Tip: link a Captain actor to enable full ability tracking.</em></p>
+          <div class="form-group">
+            <label>Target Number (TN):</label>
+            <input type="number" name="tn" value="5" min="2" max="10" autofocus/>
+          </div>
+          <div class="form-group">
+            <label>Modifier (Approach + Spend combined):</label>
+            <input type="number" name="mod" value="0" min="-5" max="20"/>
+          </div>
+        </form>
+      `,
+      ok: {
+        label: `Fire! (${cannons} cannon${cannons !== 1 ? "s" : ""})`,
+        icon: "fas fa-fire",
+        callback: (ev, button) => {
+          const fd = new FormDataExtended(button.form).object;
+          return { tn: parseInt(fd.tn) || 5, mod: parseInt(fd.mod) || 0 };
+        }
+      },
+      rejectClose: false
     });
 
     if (!dialogResult) return;
@@ -271,9 +288,9 @@ export class BDNDShipSheet extends ActorSheet {
       speaker: ChatMessage.getSpeaker({ actor: this.actor }),
       content: `
         <div class="bdnd-roll bdnd-broadside">
-          <h2><i class="fas fa-fire"></i> Broadside! (${cannons} cannon${cannons !== 1 ? 's' : ''})</h2>
+          <h2><i class="fas fa-fire"></i> Broadside! (${cannons} cannon${cannons !== 1 ? "s" : ""})</h2>
           <div class="roll-details">
-            <div class="bdnd-breakdown-row"><span>Modifier:</span><strong>${dialogResult.mod >= 0 ? '+' : ''}${dialogResult.mod}</strong></div>
+            <div class="bdnd-breakdown-row"><span>Modifier:</span><strong>${dialogResult.mod >= 0 ? "+" : ""}${dialogResult.mod}</strong></div>
           </div>
           <div class="dice-result">
             <h3>Result: ${roll.total}</h3>
@@ -282,7 +299,6 @@ export class BDNDShipSheet extends ActorSheet {
           </div>
         </div>
       `,
-      type: ChatMessage.TYPES.ROLL,
       rolls: [roll]
     });
   }
@@ -291,8 +307,8 @@ export class BDNDShipSheet extends ActorSheet {
    * Divide Plunder.
    * Deducts sailor points (crew cost), splits remainder equally among PCs.
    */
-  async _onPayout(event) {
-    event.preventDefault();
+  static async #onPayout() {
+    if (!this.isEditable) return;
     const booty   = this.actor.system.booty.value ?? 0;
     const hands   = this.actor.system.hands?.current ?? 0;
     const players = game.actors.filter(a => a.type === "character" && a.hasPlayerOwner);
@@ -303,32 +319,29 @@ export class BDNDShipSheet extends ActorSheet {
     }
 
     // GM enters crew cut — hands.current pre-filled as a reference
-    const crewCut = await new Promise((resolve) => {
-      new Dialog({
-        title: "Divide the Plunder",
-        content: `
-          <form class="bdnd-dialog">
-            <p class="bdnd-rule-note">
-              <strong>Total Booty:</strong> ${booty}<br>
-              <strong>Current Hands:</strong> ${hands} (for reference)
-            </p>
-            <div class="form-group">
-              <label>Crew's Cut (deducted before PC split):</label>
-              <input type="number" name="cut" value="${hands}" min="0" max="${booty}" autofocus/>
-            </div>
-          </form>
-        `,
-        buttons: {
-          pay: {
-            label: "Calculate Split",
-            icon: '<i class="fas fa-coins"></i>',
-            callback: (html) => resolve(parseInt(html.find('[name="cut"]').val()) || 0)
-          },
-          cancel: { label: "Cancel", callback: () => resolve(null) }
-        },
-        default: "pay",
-        close: () => resolve(null)
-      }).render(true);
+    const crewCut = await DialogV2.prompt({
+      window: { title: "Divide the Plunder" },
+      classes: ["bdnd-dialog"],
+      position: { width: 380 },
+      content: `
+        <form class="bdnd-dialog">
+          <p class="bdnd-rule-note">
+            <strong>Total Booty:</strong> ${booty}<br>
+            <strong>Current Hands:</strong> ${hands} (for reference)
+          </p>
+          <div class="form-group">
+            <label>Crew's Cut (deducted before PC split):</label>
+            <input type="number" name="cut" value="${hands}" min="0" max="${booty}" autofocus/>
+          </div>
+        </form>
+      `,
+      ok: {
+        label: "Calculate Split",
+        icon: "fas fa-coins",
+        callback: (ev, button) => parseInt(new FormDataExtended(button.form).object.cut) || 0
+      },
+      buttons: [{ action: "cancel", label: "Cancel", callback: () => null }],
+      rejectClose: false
     });
 
     if (crewCut === null) return;
@@ -342,8 +355,8 @@ export class BDNDShipSheet extends ActorSheet {
     const share     = Math.floor(remainder / players.length);
     const leftOver  = remainder % players.length;
 
-    const confirmed = await Dialog.confirm({
-      title: "Confirm Payout",
+    const confirmed = await DialogV2.confirm({
+      window: { title: "Confirm Payout" },
       content: `
         <div class="bdnd-dialog">
           <p><strong>Booty:</strong> ${booty}</p>
@@ -352,7 +365,8 @@ export class BDNDShipSheet extends ActorSheet {
           <p><strong>Each PC receives:</strong> ${share} coin (${players.length} PCs)</p>
           <p><em>Leftover in hold: ${leftOver}</em></p>
         </div>
-      `
+      `,
+      rejectClose: false
     });
 
     if (!confirmed) return;

@@ -1,222 +1,218 @@
-<form class="{{cssClass}}" autocomplete="off">
-
-  {{!-- ══ HEADER ══════════════════════════════════════════════════════ --}}
-  <header class="npc-header">
-    <img src="{{actor.img}}" data-edit="img" title="{{actor.name}}" class="actor-portrait npc-portrait"/>
-    <div class="npc-header-details">
-      <div class="npc-name">
-        <input name="name" type="text" value="{{actor.name}}" placeholder="Name / Type"/>
-      </div>
-      <input type="text" name="system.drive" value="{{system.drive}}"
-             placeholder="Motivation / Instinct" class="npc-motivation"/>
+{{!-- ══ HEADER ══════════════════════════════════════════════════════ --}}
+<header class="npc-header">
+  <img src="{{actor.img}}" data-action="editImage" data-edit="img" title="{{actor.name}}" class="actor-portrait npc-portrait"/>
+  <div class="npc-header-details">
+    <div class="npc-name">
+      <input name="name" type="text" value="{{actor.name}}" placeholder="Name / Type"/>
     </div>
-  </header>
-
-  {{!-- ══ NPC TYPE TOGGLE ════════════════════════════════════════════ --}}
-  <div class="npc-type-row">
-    <span class="npc-type-label">
-      {{#if isRegularNPC}}
-        <i class="fas fa-skull-crossbones"></i> Regular NPC <span class="npc-type-note">(Taken Out at max counter — no Conditions)</span>
-      {{else}}
-        <i class="fas fa-user-tie"></i> Named NPC <span class="npc-type-note">(full Conditions track)</span>
-      {{/if}}
-    </span>
-    <button type="button" class="toggle-npc-type npc-type-btn"
-            title="Toggle between Named NPC (full Conditions) and Regular NPC (Taken Out at max counter)">
-      Switch to {{#if isRegularNPC}}Named{{else}}Regular{{/if}}
-    </button>
+    <input type="text" name="system.drive" value="{{system.drive}}"
+           placeholder="Motivation / Instinct" class="npc-motivation"/>
   </div>
+</header>
 
-  {{!-- ══ APPROACHES ═══════════════════════════════════════════════════ --}}
-  <div class="sp">
-    <span class="sp-title">Approaches &amp; Methods</span>
-    <div class="ledger-grid">
-      {{#each approachList as |approach|}}
-      <div class="ledger-col">
-        <div class="ledger-lbl-row">
-          <span class="ledger-lbl">{{approach.label}}</span>
-          {{#each approach.conditionBadges as |badge|}}
-            <span class="approach-cond-badge {{badge.type}}" title="{{badge.name}} — −1 to all {{../approach.label}} Tests">−1</span>
-          {{/each}}
-        </div>
-        <div class="ledger-rtg-row">
-          <span class="ledger-rtg-label">Rtg</span>
-          <input type="number" name="system.approaches.{{approach.key}}.rating"
-                 value="{{approach.rating}}" class="ledger-rtg-input"/>
-        </div>
-        <div class="approach-pips">
-          {{#each approach.pips as |pip|}}
-            <span class="pip {{#if pip.full}}pip-full{{else}}pip-empty{{/if}}"></span>
-          {{/each}}
-          {{#if (eq approach.rating 0)}}<span class="approach-unrated">—</span>{{/if}}
-        </div>
-        <input type="number" name="system.approaches.{{approach.key}}.value"
-               value="{{approach.pool}}" class="approach-pool-input ledger-pool"/>
+{{!-- ══ NPC TYPE TOGGLE ════════════════════════════════════════════ --}}
+<div class="npc-type-row">
+  <span class="npc-type-label">
+    {{#if isRegularNPC}}
+      <i class="fas fa-skull-crossbones"></i> Regular NPC <span class="npc-type-note">(Taken Out at max counter — no Conditions)</span>
+    {{else}}
+      <i class="fas fa-user-tie"></i> Named NPC <span class="npc-type-note">(full Conditions track)</span>
+    {{/if}}
+  </span>
+  <button type="button" data-action="toggleNpcType" class="npc-type-btn"
+          title="Toggle between Named NPC (full Conditions) and Regular NPC (Taken Out at max counter)">
+    Switch to {{#if isRegularNPC}}Named{{else}}Regular{{/if}}
+  </button>
+</div>
+
+{{!-- ══ APPROACHES ═══════════════════════════════════════════════════ --}}
+<div class="sp">
+  <span class="sp-title">Approaches &amp; Methods</span>
+  <div class="ledger-grid">
+    {{#each approachList as |approach|}}
+    <div class="ledger-col">
+      <div class="ledger-lbl-row">
+        <span class="ledger-lbl">{{approach.label}}</span>
+        {{#each approach.conditionBadges as |badge|}}
+          <span class="approach-cond-badge {{badge.type}}" title="{{badge.name}} — −1 to all {{../approach.label}} Tests">−1</span>
+        {{/each}}
       </div>
-      {{/each}}
+      <div class="ledger-rtg-row">
+        <span class="ledger-rtg-label">Rtg</span>
+        <input type="number" name="system.approaches.{{approach.key}}.rating"
+               value="{{approach.rating}}" class="ledger-rtg-input"/>
+      </div>
+      <div class="approach-pips">
+        {{#each approach.pips as |pip|}}
+          <span class="pip {{#if pip.full}}pip-full{{else}}pip-empty{{/if}}"></span>
+        {{/each}}
+        {{#if (eq approach.rating 0)}}<span class="approach-unrated">—</span>{{/if}}
+      </div>
+      <input type="number" name="system.approaches.{{approach.key}}.value"
+             value="{{approach.pool}}" class="approach-pool-input ledger-pool"/>
     </div>
+    {{/each}}
   </div>
+</div>
 
-  {{!-- ══ COMBAT STATUS — counters + conditions in one panel ══════════ --}}
-  <div class="sp">
-    <span class="sp-title">Combat Status</span>
-    <div class="npc-ctr-grid">
-      <div class="pc-counter health-counter">
-        <div class="pc-counter-head">
-          <span class="pc-counter-lbl"><i class="fas fa-heartbeat"></i> Health Risk</span>
-          <span class="pc-counter-nums">
-            <input type="number" name="system.health.value" value="{{system.health.value}}" class="counter-val-input"/>
-            <span class="counter-sep">/</span>
-            <input type="number" name="system.health.base"  value="{{system.health.base}}"  class="counter-base-input" title="Edit base max"/>
-          </span>
-        </div>
-        <div class="pc-counter-bar-wrap"><div class="pc-counter-bar health-bar" style="width:{{healthPct}}%;max-width:100%"></div></div>
-        <button type="button" class="roll-clutch pc-counter-btn">Clutch Test</button>
-      </div>
-      <div class="pc-counter stab-counter">
-        <div class="pc-counter-head">
-          <span class="pc-counter-lbl"><i class="fas fa-brain"></i> Stability Risk</span>
-          <span class="pc-counter-nums">
-            <input type="number" name="system.stability.value" value="{{system.stability.value}}" class="counter-val-input"/>
-            <span class="counter-sep">/</span>
-            <input type="number" name="system.stability.base"  value="{{system.stability.base}}"  class="counter-base-input" title="Edit base max"/>
-          </span>
-        </div>
-        <div class="pc-counter-bar-wrap"><div class="pc-counter-bar stab-bar" style="width:{{stabilityPct}}%;max-width:100%"></div></div>
-        <button type="button" class="roll-stability pc-counter-btn">Stability Test</button>
-      </div>
-    </div>
-    {{!-- Conditions inline — Named NPCs only --}}
-    {{#unless isRegularNPC}}
-    <div class="npc-conditions-inner">
-      <span class="npc-cond-lbl">
-        Conditions
-        <span class="condition-counts">
-          ({{physicalConditions}} phys / {{mentalConditions}} mental
-          {{#if (gte physicalConditions 2)}}<span class="condition-limit-warn">⚠ Limit!</span>{{/if}}
-          {{#if (gte mentalConditions 2)}}<span class="condition-limit-warn">⚠ Limit!</span>{{/if}}
-          )
+{{!-- ══ COMBAT STATUS — counters + conditions in one panel ══════════ --}}
+<div class="sp">
+  <span class="sp-title">Combat Status</span>
+  <div class="npc-ctr-grid">
+    <div class="pc-counter health-counter">
+      <div class="pc-counter-head">
+        <span class="pc-counter-lbl"><i class="fas fa-heartbeat"></i> Health Risk</span>
+        <span class="pc-counter-nums">
+          <input type="number" name="system.health.value" value="{{system.health.value}}" class="counter-val-input"/>
+          <span class="counter-sep">/</span>
+          <input type="number" name="system.health.base"  value="{{system.health.base}}"  class="counter-base-input" title="Edit base max"/>
         </span>
+      </div>
+      <div class="pc-counter-bar-wrap"><div class="pc-counter-bar health-bar" style="width:{{healthPct}}%;max-width:100%"></div></div>
+      <button type="button" data-action="rollClutch" class="pc-counter-btn">Clutch Test</button>
+    </div>
+    <div class="pc-counter stab-counter">
+      <div class="pc-counter-head">
+        <span class="pc-counter-lbl"><i class="fas fa-brain"></i> Stability Risk</span>
+        <span class="pc-counter-nums">
+          <input type="number" name="system.stability.value" value="{{system.stability.value}}" class="counter-val-input"/>
+          <span class="counter-sep">/</span>
+          <input type="number" name="system.stability.base"  value="{{system.stability.base}}"  class="counter-base-input" title="Edit base max"/>
+        </span>
+      </div>
+      <div class="pc-counter-bar-wrap"><div class="pc-counter-bar stab-bar" style="width:{{stabilityPct}}%;max-width:100%"></div></div>
+      <button type="button" data-action="rollStability" class="pc-counter-btn">Stability Test</button>
+    </div>
+  </div>
+  {{!-- Conditions inline — Named NPCs only --}}
+  {{#unless isRegularNPC}}
+  <div class="npc-conditions-inner">
+    <span class="npc-cond-lbl">
+      Conditions
+      <span class="condition-counts">
+        ({{physicalConditions}} phys / {{mentalConditions}} mental
+        {{#if (gte physicalConditions 2)}}<span class="condition-limit-warn">⚠ Limit!</span>{{/if}}
+        {{#if (gte mentalConditions 2)}}<span class="condition-limit-warn">⚠ Limit!</span>{{/if}}
+        )
       </span>
-      {{#if conditions.length}}
-      <ul class="conditions-list">
-        {{#each conditions as |item|}}
-        <li class="condition-tag {{item.system.conditionType}}" data-item-id="{{item._id}}">
-          <span class="condition-name">{{item.name}}</span>
-          <span class="condition-approach">(−1 {{item.system.approach}})</span>
-          <a class="item-edit condition-edit" title="Edit"><i class="fas fa-edit"></i></a>
-          <a class="item-delete condition-delete" title="Remove"><i class="fas fa-times"></i></a>
-        </li>
-        {{/each}}
-      </ul>
-      {{/if}}
-      <a class="item-create add-condition-btn" data-type="condition"><i class="fas fa-plus"></i> Add Condition</a>
-    </div>
-    {{else}}
-    <div class="npc-conditions-inner npc-regular-note">
-      <i class="fas fa-skull-crossbones"></i>
-      Regular NPC — no Conditions track. This NPC is <strong>Taken Out</strong> when their Health Risk Counter reaches maximum.
-    </div>
-    {{/unless}}
-  </div>
-
-  {{!-- ══ ABILITIES ══════════════════════════════════════════════════ --}}
-  <div class="sp">
-    <span class="sp-title">Abilities</span>
-    <div class="sp-toolbar">
-      <a class="toggle-abilities"><i class="fas fa-eye"></i> {{#if showAllAbilities}}Hide Unrated{{else}}Show All{{/if}}</a>
-      <a class="roll-contest"><i class="fas fa-swords"></i> Contest</a>
-      <a class="roll-cooperation"><i class="fas fa-people-carry"></i> Cooperate</a>
-      <a class="refresh-event"><i class="fas fa-undo"></i> Refresh</a>
-    </div>
-    {{#if (eq generalAbilities.length 0)}}
-    <p class="empty-hint">No abilities rated — click Show All to assign ratings.</p>
+    </span>
+    {{#if conditions.length}}
+    <ul class="conditions-list">
+      {{#each conditions as |item|}}
+      <li class="condition-tag {{item.system.conditionType}}" data-item-id="{{item._id}}">
+        <span class="condition-name">{{item.name}}</span>
+        <span class="condition-approach">(−1 {{item.system.approach}})</span>
+        <a data-action="itemEdit" class="condition-edit" title="Edit"><i class="fas fa-edit"></i></a>
+        <a data-action="itemDelete" class="condition-delete" title="Remove"><i class="fas fa-times"></i></a>
+      </li>
+      {{/each}}
+    </ul>
     {{/if}}
-    <table class="ability-table npc-ability-table">
-      <thead><tr><th>Skill</th><th>Rtg</th><th>Pool</th></tr></thead>
-      <tbody>
-        {{#each generalAbilities as |ability|}}
-        <tr>
-          <td><a class="roll-general ability-roll-label" data-key="{{ability.key}}">{{ability.label}}</a></td>
-          <td><input type="number" name="system.abilities.general.{{ability.key}}.rating" value="{{ability.rating}}" class="npc-ability-input"/></td>
-          <td><input type="number" name="system.abilities.general.{{ability.key}}.value"  value="{{ability.value}}" class="npc-ability-input pool-input"/></td>
-        </tr>
-        {{/each}}
-      </tbody>
-    </table>
+    <a data-action="itemCreate" data-type="condition" class="add-condition-btn"><i class="fas fa-plus"></i> Add Condition</a>
   </div>
+  {{else}}
+  <div class="npc-conditions-inner npc-regular-note">
+    <i class="fas fa-skull-crossbones"></i>
+    Regular NPC — no Conditions track. This NPC is <strong>Taken Out</strong> when their Health Risk Counter reaches maximum.
+  </div>
+  {{/unless}}
+</div>
 
-  {{!-- ══ CHERRIES ════════════════════════════════════════════════════ --}}
-  <div class="sp">
-    <span class="sp-title">★ Cherries <a class="item-create sp-add" data-type="cherry"><i class="fas fa-plus"></i></a></span>
-    {{#if cherries.length}}
-    <ul class="item-list cherry-list">
-      {{#each cherries as |item|}}
-      <li class="item flexrow cherry-item" data-item-id="{{item._id}}">
-        <span class="cherry-star">★</span>
-        <div class="cherry-details">
-          <span class="cherry-name">{{item.name}}</span>
-          <span class="cherry-ability">({{item.system.abilityLabel}})</span>
-          {{#if item.system.has_post_roll_spend}}<span class="cherry-badge post-roll-badge">Post-roll spend</span>{{/if}}
-        </div>
-        <div class="item-controls">
-          <a class="item-edit" title="Edit"><i class="fas fa-edit"></i></a>
-          <a class="item-delete" title="Remove"><i class="fas fa-trash"></i></a>
-        </div>
-      </li>
-      {{/each}}
-    </ul>
-    {{else}}
-    <p class="empty-hint">No Cherries yet.</p>
-    {{/if}}
+{{!-- ══ ABILITIES ══════════════════════════════════════════════════ --}}
+<div class="sp">
+  <span class="sp-title">Abilities</span>
+  <div class="sp-toolbar">
+    <a data-action="toggleAbilities"><i class="fas fa-eye"></i> {{#if showAllAbilities}}Hide Unrated{{else}}Show All{{/if}}</a>
+    <a data-action="rollContest"><i class="fas fa-swords"></i> Contest</a>
+    <a data-action="rollCooperation"><i class="fas fa-people-carry"></i> Cooperate</a>
+    <a data-action="refreshEvent"><i class="fas fa-undo"></i> Refresh</a>
   </div>
-
-  {{!-- ══ COMBAT GEAR ════════════════════════════════════════════════ --}}
-  <div class="sp">
-    <span class="sp-title">Combat Gear <a class="item-create sp-add" data-type="weapon"><i class="fas fa-plus"></i></a></span>
-    <ul class="item-list">
-      {{#each weapons as |item|}}
-      <li class="item flexrow" data-item-id="{{item._id}}">
-        <h4 class="item-name npc-item-name">
-          <a class="roll-weapon-attack">{{item.name}}</a>
-          <span class="weapon-meta">+{{item.system.bonus}} dmg · {{item.system.range}}</span>
-        </h4>
-        <div class="item-controls">
-          <a class="roll-damage" title="Roll Damage"><i class="fas fa-dice-d6"></i></a>
-          <a class="item-edit" title="Edit"><i class="fas fa-edit"></i></a>
-          <a class="item-delete" title="Delete"><i class="fas fa-trash"></i></a>
-        </div>
-      </li>
-      {{/each}}
-    </ul>
-  </div>
-
-  {{!-- ══ SPELLS (Option B) ══════════════════════════════════════════ --}}
-  {{#if showSpells}}
-  <div class="sp">
-    <span class="sp-title"><i class="fas fa-hat-wizard"></i> Spells &amp; Rituals <a class="item-create sp-add" data-type="spell"><i class="fas fa-plus"></i></a></span>
-    <ul class="item-list">
-      {{#each spells as |item|}}
-      <li class="item flexrow" data-item-id="{{item._id}}">
-        <h4 class="item-name npc-item-name">
-          <a class="cast-spell">{{item.name}}</a>
-          <span class="weapon-meta">Level {{item.system.level}}</span>
-        </h4>
-        <div class="item-controls">
-          <a class="item-edit" title="Edit"><i class="fas fa-edit"></i></a>
-          <a class="item-delete" title="Delete"><i class="fas fa-trash"></i></a>
-        </div>
-      </li>
-      {{/each}}
-    </ul>
-  </div>
+  {{#if (eq generalAbilities.length 0)}}
+  <p class="empty-hint">No abilities rated — click Show All to assign ratings.</p>
   {{/if}}
+  <table class="ability-table npc-ability-table">
+    <thead><tr><th>Skill</th><th>Rtg</th><th>Pool</th></tr></thead>
+    <tbody>
+      {{#each generalAbilities as |ability|}}
+      <tr>
+        <td><a data-action="rollGeneral" data-key="{{ability.key}}" class="ability-roll-label">{{ability.label}}</a></td>
+        <td><input type="number" name="system.abilities.general.{{ability.key}}.rating" value="{{ability.rating}}" class="npc-ability-input"/></td>
+        <td><input type="number" name="system.abilities.general.{{ability.key}}.value"  value="{{ability.value}}" class="npc-ability-input pool-input"/></td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
 
-  {{!-- ══ TRAITS / NOTES ════════════════════════════════════════════ --}}
-  <div class="sp" style="margin-bottom:0;">
-    <span class="sp-title">Special Rules / Traits</span>
-    <textarea name="system.biography" class="biography-field npc-biography"
-              placeholder="Traits, special attacks, behaviour, tactics…">{{system.biography}}</textarea>
-  </div>
+{{!-- ══ CHERRIES ════════════════════════════════════════════════════ --}}
+<div class="sp">
+  <span class="sp-title">★ Cherries <a data-action="itemCreate" data-type="cherry" class="sp-add"><i class="fas fa-plus"></i></a></span>
+  {{#if cherries.length}}
+  <ul class="item-list cherry-list">
+    {{#each cherries as |item|}}
+    <li class="item flexrow cherry-item" data-item-id="{{item._id}}">
+      <span class="cherry-star">★</span>
+      <div class="cherry-details">
+        <span class="cherry-name">{{item.name}}</span>
+        <span class="cherry-ability">({{item.system.abilityLabel}})</span>
+        {{#if item.system.has_post_roll_spend}}<span class="cherry-badge post-roll-badge">Post-roll spend</span>{{/if}}
+      </div>
+      <div class="item-controls">
+        <a data-action="itemEdit" title="Edit"><i class="fas fa-edit"></i></a>
+        <a data-action="itemDelete" title="Remove"><i class="fas fa-trash"></i></a>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="empty-hint">No Cherries yet.</p>
+  {{/if}}
+</div>
 
-</form>
+{{!-- ══ COMBAT GEAR ════════════════════════════════════════════════ --}}
+<div class="sp">
+  <span class="sp-title">Combat Gear <a data-action="itemCreate" data-type="weapon" class="sp-add"><i class="fas fa-plus"></i></a></span>
+  <ul class="item-list">
+    {{#each weapons as |item|}}
+    <li class="item flexrow" data-item-id="{{item._id}}">
+      <h4 class="item-name npc-item-name">
+        <a data-action="rollWeaponAttack">{{item.name}}</a>
+        <span class="weapon-meta">+{{item.system.bonus}} dmg · {{item.system.range}}</span>
+      </h4>
+      <div class="item-controls">
+        <a data-action="rollDamage" title="Roll Damage"><i class="fas fa-dice-d6"></i></a>
+        <a data-action="itemEdit" title="Edit"><i class="fas fa-edit"></i></a>
+        <a data-action="itemDelete" title="Delete"><i class="fas fa-trash"></i></a>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+</div>
+
+{{!-- ══ SPELLS (Option B) ══════════════════════════════════════════ --}}
+{{#if showSpells}}
+<div class="sp">
+  <span class="sp-title"><i class="fas fa-hat-wizard"></i> Spells &amp; Rituals <a data-action="itemCreate" data-type="spell" class="sp-add"><i class="fas fa-plus"></i></a></span>
+  <ul class="item-list">
+    {{#each spells as |item|}}
+    <li class="item flexrow" data-item-id="{{item._id}}">
+      <h4 class="item-name npc-item-name">
+        <a data-action="castSpell">{{item.name}}</a>
+        <span class="weapon-meta">Level {{item.system.level}}</span>
+      </h4>
+      <div class="item-controls">
+        <a data-action="itemEdit" title="Edit"><i class="fas fa-edit"></i></a>
+        <a data-action="itemDelete" title="Delete"><i class="fas fa-trash"></i></a>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+</div>
+{{/if}}
+
+{{!-- ══ TRAITS / NOTES ════════════════════════════════════════════ --}}
+<div class="sp" style="margin-bottom:0;">
+  <span class="sp-title">Special Rules / Traits</span>
+  <textarea name="system.biography" class="biography-field npc-biography"
+            placeholder="Traits, special attacks, behaviour, tactics…">{{system.biography}}</textarea>
+</div>

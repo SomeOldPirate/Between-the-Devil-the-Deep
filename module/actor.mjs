@@ -1,4 +1,5 @@
-import { BDNDActorSheet } from "./sheets/actor-sheet.mjs";
+const { DialogV2 } = foundry.applications.api;
+const { FormDataExtended } = foundry.applications.ux;
 
 export class BDNDActor extends Actor {
 
@@ -13,7 +14,7 @@ export class BDNDActor extends Actor {
   /** @override */
   prepareDerivedData() {
     const actorData = this;
-    if (actorData.type === 'character') this._prepareCharacterData(actorData);
+    if (actorData.type === 'character' || actorData.type === 'npc') this._prepareCharacterData(actorData);
   }
 
   /**
@@ -144,7 +145,6 @@ export class BDNDActor extends Actor {
           ${complicationHTML}
         </div>
       `,
-      type: ChatMessage.TYPES.ROLL,
       rolls: damageRoll ? [roll, damageRoll] : [roll]
     });
   }
@@ -219,57 +219,57 @@ export class BDNDActor extends Actor {
         ${hasPostRollSpend ? '— Post-roll spend available (spend 2 after result for +1)' : ''}
       </div>` : '';
 
-    const dialogResult = await new Promise((resolve) => {
-      new Dialog({
-        title: isContest ? `Contest: ${rollTitle}` : `Test: ${rollTitle}`,
-        content: `
-          <form class="bdnd-dialog">
-            <div class="form-group">
-              <label>Ability: <strong>${rollTitle}</strong>
-                &nbsp;Rating: <strong>${ability.rating}</strong>
-                &nbsp;Pool: <strong>${currentPool}</strong>
-                ${unskilledPenalty !== 0 ? '<span class="bdnd-unskilled">(Unskilled −2)</span>' : ''}
-              </label>
-            </div>
-            ${cherryBlock}
-            ${rangeBandField}
-            ${tnField}
-            <div class="form-group">
-              <label>Select Approach (adds its Rating free):</label>
-              <select name="approachKey" style="width:100%;">
-                ${this._buildApproachOptions()}
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Spend Ability Pool Points (Max: ${currentPool}):</label>
-              <input type="number" name="spend" value="0" min="0" max="${currentPool}" autofocus/>
-            </div>
-            ${flankingField}
-            <div class="form-group bdnd-exploit-group">
-              <label>
-                <input type="checkbox" name="exploit"/>
-                GM Granted Exploit Point? (+2, requires pool spend)
-              </label>
-            </div>
-          </form>
-        `,
-        buttons: {
-          roll: {
-            label: isContest ? "Roll My Side" : "Roll Die",
-            icon: isContest ? "<i class='fas fa-swords'></i>" : "<i class='fas fa-dice'></i>",
-            callback: (html) => resolve({
-              tn:        parseInt(html.find('[name="tn"]').val()) || 8,
-              rangeBand: html.find('[name="rangeBand"]').val() || null,
-              flanking:  html.find('[name="flanking"]').is(':checked'),
-              approachKey: html.find('[name="approachKey"]').val(),
-              spend:     parseInt(html.find('[name="spend"]').val()) || 0,
-              exploit:   html.find('[name="exploit"]').is(':checked')
-            })
-          }
-        },
-        default: "roll",
-        close: () => resolve(null)
-      }).render(true);
+    const dialogResult = await DialogV2.prompt({
+      window: { title: isContest ? `Contest: ${rollTitle}` : `Test: ${rollTitle}` },
+      classes: ["bdnd-dialog"],
+      position: { width: 380 },
+      content: `
+        <form class="bdnd-dialog">
+          <div class="form-group">
+            <label>Ability: <strong>${rollTitle}</strong>
+              &nbsp;Rating: <strong>${ability.rating}</strong>
+              &nbsp;Pool: <strong>${currentPool}</strong>
+              ${unskilledPenalty !== 0 ? '<span class="bdnd-unskilled">(Unskilled −2)</span>' : ''}
+            </label>
+          </div>
+          ${cherryBlock}
+          ${rangeBandField}
+          ${tnField}
+          <div class="form-group">
+            <label>Select Approach (adds its Rating free):</label>
+            <select name="approachKey" style="width:100%;">
+              ${this._buildApproachOptions()}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Spend Ability Pool Points (Max: ${currentPool}):</label>
+            <input type="number" name="spend" value="0" min="0" max="${currentPool}" autofocus/>
+          </div>
+          ${flankingField}
+          <div class="form-group bdnd-exploit-group">
+            <label>
+              <input type="checkbox" name="exploit"/>
+              GM Granted Exploit Point? (+2, requires pool spend)
+            </label>
+          </div>
+        </form>
+      `,
+      ok: {
+        label: isContest ? "Roll My Side" : "Roll Die",
+        icon: isContest ? "fas fa-swords" : "fas fa-dice",
+        callback: (event, button) => {
+          const fd = new FormDataExtended(button.form).object;
+          return {
+            tn: parseInt(fd.tn) || 8,
+            rangeBand: fd.rangeBand || null,
+            flanking: !!fd.flanking,
+            approachKey: fd.approachKey,
+            spend: parseInt(fd.spend) || 0,
+            exploit: !!fd.exploit
+          };
+        }
+      },
+      rejectClose: false
     });
 
     if (!dialogResult) return;
@@ -339,7 +339,6 @@ export class BDNDActor extends Actor {
             </div>
           </div>
         `,
-        type: ChatMessage.TYPES.ROLL,
         rolls: [roll]
       });
     } else {
@@ -373,39 +372,36 @@ export class BDNDActor extends Actor {
         return `<option value="${key}" ${key === 'athletics' ? 'selected' : ''}>${label} (Pool: ${data.value ?? 0})</option>`;
       }).join('');
 
-    const dialogResult = await new Promise((resolve) => {
-      new Dialog({
-        title: `Clutch Test`,
-        content: `
-          <form class="bdnd-dialog">
-            <p class="bdnd-rule-note">
-              <strong>Clutch Test:</strong> 2d6 + Pool Points spent vs TN 6.<br>
-              <em>No Approach Rating is added. Spend from a relevant Ability pool
-              (usually Athletics; GM may allow Interpersonal Ability for Stability tests).</em>
-            </p>
-            <div class="form-group">
-              <label>Spend Points From Ability:</label>
-              <select name="abilityKey" style="width:100%;">${abilityOptions}</select>
-            </div>
-            <div class="form-group">
-              <label>Points to Spend (optional):</label>
-              <input type="number" name="spend" value="0" min="0" autofocus/>
-            </div>
-          </form>
-        `,
-        buttons: {
-          roll: {
-            label: "Roll Clutch",
-            icon: "<i class='fas fa-heartbeat'></i>",
-            callback: (html) => resolve({
-              abilityKey: html.find('[name="abilityKey"]').val(),
-              spend: parseInt(html.find('[name="spend"]').val()) || 0
-            })
-          }
-        },
-        default: "roll",
-        close: () => resolve(null)
-      }).render(true);
+    const dialogResult = await DialogV2.prompt({
+      window: { title: `Clutch Test` },
+      classes: ["bdnd-dialog"],
+      position: { width: 380 },
+      content: `
+        <form class="bdnd-dialog">
+          <p class="bdnd-rule-note">
+            <strong>Clutch Test:</strong> 2d6 + Pool Points spent vs TN 6.<br>
+            <em>No Approach Rating is added. Spend from a relevant Ability pool
+            (usually Athletics; GM may allow Interpersonal Ability for Stability tests).</em>
+          </p>
+          <div class="form-group">
+            <label>Spend Points From Ability:</label>
+            <select name="abilityKey" style="width:100%;">${abilityOptions}</select>
+          </div>
+          <div class="form-group">
+            <label>Points to Spend (optional):</label>
+            <input type="number" name="spend" value="0" min="0" autofocus/>
+          </div>
+        </form>
+      `,
+      ok: {
+        label: "Roll Clutch",
+        icon: "fas fa-heartbeat",
+        callback: (event, button) => {
+          const fd = new FormDataExtended(button.form).object;
+          return { abilityKey: fd.abilityKey, spend: parseInt(fd.spend) || 0 };
+        }
+      },
+      rejectClose: false
     });
 
     if (!dialogResult) return;
@@ -480,58 +476,56 @@ export class BDNDActor extends Actor {
     const currentStability = this.system.stability?.value ?? 0;
     const stabilityMax     = this.system.stability?.max   ?? 8;
 
-    const dialogResult = await new Promise((resolve) => {
-      new Dialog({
-        title: `Stability Test`,
-        content: `
-          <form class="bdnd-dialog">
-            <p class="bdnd-rule-note">
-              <strong>Stability Test (SHAMUS).</strong><br>
-              On a <em>failure</em>, the Stability Risk Counter rises by the incident amount.
-              At max, the character is taken out of commission.
-              Approach pool spend is lost win or lose.
-            </p>
-            <div class="form-group">
-              <label>Incident Severity:</label>
-              <select name="incident" style="width:100%;">${incidentOptions}</select>
-            </div>
-            <div class="form-group">
-              <label>Custom Counter Rise <span class="field-hint">(overrides table if set)</span>:</label>
-              <input type="number" name="customLoss" value="" min="1" max="20"
-                     placeholder="Leave blank to use incident table"/>
-            </div>
-            <div class="form-group">
-              <label>Target Number (GM sets, typically 5–8):</label>
-              <input type="number" name="tn" value="8" min="2" max="13"/>
-            </div>
-            <div class="form-group">
-              <label>Select Approach:</label>
-              <select name="approachKey" style="width:100%;">${approachOptions}</select>
-            </div>
-            <div class="form-group">
-              <label>Spend Approach Pool Points <span class="field-hint">(lost win or lose)</span>:</label>
-              <input type="number" name="spend" value="0" min="0" autofocus/>
-            </div>
-          </form>
-        `,
-        buttons: {
-          roll: {
-            label: "Roll Stability",
-            icon: "<i class='fas fa-brain'></i>",
-            callback: (html) => {
-              const customLoss = parseInt(html.find('[name="customLoss"]').val());
-              resolve({
-                approachKey: html.find('[name="approachKey"]').val(),
-                spend:       parseInt(html.find('[name="spend"]').val()) || 0,
-                tn:          parseInt(html.find('[name="tn"]').val()) || 5,
-                loss:        isNaN(customLoss) ? parseInt(html.find('[name="incident"]').val()) : customLoss
-              });
-            }
-          }
-        },
-        default: "roll",
-        close: () => resolve(null)
-      }).render(true);
+    const dialogResult = await DialogV2.prompt({
+      window: { title: `Stability Test` },
+      classes: ["bdnd-dialog"],
+      position: { width: 380 },
+      content: `
+        <form class="bdnd-dialog">
+          <p class="bdnd-rule-note">
+            <strong>Stability Test (SHAMUS).</strong><br>
+            On a <em>failure</em>, the Stability Risk Counter rises by the incident amount.
+            At max, the character is taken out of commission.
+            Approach pool spend is lost win or lose.
+          </p>
+          <div class="form-group">
+            <label>Incident Severity:</label>
+            <select name="incident" style="width:100%;">${incidentOptions}</select>
+          </div>
+          <div class="form-group">
+            <label>Custom Counter Rise <span class="field-hint">(overrides table if set)</span>:</label>
+            <input type="number" name="customLoss" value="" min="1" max="20"
+                   placeholder="Leave blank to use incident table"/>
+          </div>
+          <div class="form-group">
+            <label>Target Number (GM sets, typically 5–8):</label>
+            <input type="number" name="tn" value="8" min="2" max="13"/>
+          </div>
+          <div class="form-group">
+            <label>Select Approach:</label>
+            <select name="approachKey" style="width:100%;">${approachOptions}</select>
+          </div>
+          <div class="form-group">
+            <label>Spend Approach Pool Points <span class="field-hint">(lost win or lose)</span>:</label>
+            <input type="number" name="spend" value="0" min="0" autofocus/>
+          </div>
+        </form>
+      `,
+      ok: {
+        label: "Roll Stability",
+        icon: "fas fa-brain",
+        callback: (event, button) => {
+          const fd = new FormDataExtended(button.form).object;
+          const customLoss = parseInt(fd.customLoss);
+          return {
+            approachKey: fd.approachKey,
+            spend:       parseInt(fd.spend) || 0,
+            tn:          parseInt(fd.tn) || 5,
+            loss:        isNaN(customLoss) ? parseInt(fd.incident) : customLoss
+          };
+        }
+      },
+      rejectClose: false
     });
 
     if (!dialogResult) return;
@@ -616,31 +610,28 @@ export class BDNDActor extends Actor {
         `<option value="${key}">${BDNDActor.formatKey(key)} (Rtg ${data.rating ?? 0}, Pool ${data.value ?? 0})</option>`
       ).join('');
 
-    const chosenKey = await new Promise((resolve) => {
-      new Dialog({
-        title: options.title ?? "Contest Roll — Choose Ability",
-        content: `
-          <form class="bdnd-dialog">
-            <p class="bdnd-rule-note">
-              <strong>Contest:</strong> Select the Ability governing this contest.
-              The next dialog will let you choose your Approach and spend pool points.
-            </p>
-            <div class="form-group">
-              <label>Ability:</label>
-              <select name="abilityKey" style="width:100%;">${abilityOptions}</select>
-            </div>
-          </form>
-        `,
-        buttons: {
-          next: {
-            label: "Next →",
-            icon: "<i class='fas fa-swords'></i>",
-            callback: (html) => resolve(html.find('[name="abilityKey"]').val())
-          }
-        },
-        default: "next",
-        close: () => resolve(null)
-      }).render(true);
+    const chosenKey = await DialogV2.prompt({
+      window: { title: options.title ?? "Contest Roll — Choose Ability" },
+      classes: ["bdnd-dialog"],
+      position: { width: 380 },
+      content: `
+        <form class="bdnd-dialog">
+          <p class="bdnd-rule-note">
+            <strong>Contest:</strong> Select the Ability governing this contest.
+            The next dialog will let you choose your Approach and spend pool points.
+          </p>
+          <div class="form-group">
+            <label>Ability:</label>
+            <select name="abilityKey" style="width:100%;">${abilityOptions}</select>
+          </div>
+        </form>
+      `,
+      ok: {
+        label: "Next →",
+        icon: "fas fa-swords",
+        callback: (event, button) => new FormDataExtended(button.form).object.abilityKey
+      },
+      rejectClose: false
     });
 
     if (!chosenKey) return;
@@ -664,63 +655,63 @@ export class BDNDActor extends Actor {
         `<option value="${key}">${BDNDActor.formatKey(key)} (Rtg ${data.rating ?? 0}, Pool ${data.value ?? 0})</option>`
       ).join('');
 
-    const dialogResult = await new Promise((resolve) => {
-      new Dialog({
-        title,
-        content: `
-          <form class="bdnd-dialog">
-            <p class="bdnd-rule-note">
-              <strong>Cooperation — Lead Roller:</strong> Have helpers announce
-              which Ability pool they are spending from and how many points, then
-              enter the total here. Helpers deduct their own Ability pools manually.
-            </p>
-            <div class="form-group">
-              <label>Your Ability (governs this test):</label>
-              <select name="abilityKey" style="width:100%;">${abilityOptions}</select>
-            </div>
-            <div class="form-group">
-              <label>Target Number (TN):</label>
-              <input type="number" name="tn" value="8" min="2" max="13"/>
-            </div>
-            <div class="form-group">
-              <label>Select Approach (adds its Rating free):</label>
-              <select name="approachKey" style="width:100%;">
-                ${this._buildApproachOptions()}
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Your Ability Pool Spend:</label>
-              <input type="number" name="spend" value="0" min="0" autofocus/>
-            </div>
-            <div class="form-group">
-              <label>Total Helper Points contributed (sum from all helpers):</label>
-              <input type="number" name="helperPoints" value="0" min="0" max="20"/>
-            </div>
-            <div class="form-group bdnd-exploit-group">
-              <label>
-                <input type="checkbox" name="exploit"/>
-                GM Granted Exploit Point? (+2, requires your own pool spend)
-              </label>
-            </div>
-          </form>
-        `,
-        buttons: {
-          roll: {
-            label: "Roll (Lead)",
-            icon: "<i class='fas fa-people-carry'></i>",
-            callback: (html) => resolve({
-              abilityKey: html.find('[name="abilityKey"]').val(),
-              approachKey: html.find('[name="approachKey"]').val(),
-              tn: parseInt(html.find('[name="tn"]').val()) || 5,
-              spend: parseInt(html.find('[name="spend"]').val()) || 0,
-              helperPoints: Math.min(20, parseInt(html.find('[name="helperPoints"]').val()) || 0),
-              exploit: html.find('[name="exploit"]').is(':checked')
-            })
-          }
-        },
-        default: "roll",
-        close: () => resolve(null)
-      }).render(true);
+    const dialogResult = await DialogV2.prompt({
+      window: { title },
+      classes: ["bdnd-dialog"],
+      position: { width: 380 },
+      content: `
+        <form class="bdnd-dialog">
+          <p class="bdnd-rule-note">
+            <strong>Cooperation — Lead Roller:</strong> Have helpers announce
+            which Ability pool they are spending from and how many points, then
+            enter the total here. Helpers deduct their own Ability pools manually.
+          </p>
+          <div class="form-group">
+            <label>Your Ability (governs this test):</label>
+            <select name="abilityKey" style="width:100%;">${abilityOptions}</select>
+          </div>
+          <div class="form-group">
+            <label>Target Number (TN):</label>
+            <input type="number" name="tn" value="8" min="2" max="13"/>
+          </div>
+          <div class="form-group">
+            <label>Select Approach (adds its Rating free):</label>
+            <select name="approachKey" style="width:100%;">
+              ${this._buildApproachOptions()}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Your Ability Pool Spend:</label>
+            <input type="number" name="spend" value="0" min="0" autofocus/>
+          </div>
+          <div class="form-group">
+            <label>Total Helper Points contributed (sum from all helpers):</label>
+            <input type="number" name="helperPoints" value="0" min="0" max="20"/>
+          </div>
+          <div class="form-group bdnd-exploit-group">
+            <label>
+              <input type="checkbox" name="exploit"/>
+              GM Granted Exploit Point? (+2, requires your own pool spend)
+            </label>
+          </div>
+        </form>
+      `,
+      ok: {
+        label: "Roll (Lead)",
+        icon: "fas fa-people-carry",
+        callback: (event, button) => {
+          const fd = new FormDataExtended(button.form).object;
+          return {
+            abilityKey: fd.abilityKey,
+            approachKey: fd.approachKey,
+            tn: parseInt(fd.tn) || 5,
+            spend: parseInt(fd.spend) || 0,
+            helperPoints: Math.min(20, parseInt(fd.helperPoints) || 0),
+            exploit: !!fd.exploit
+          };
+        }
+      },
+      rejectClose: false
     });
 
     if (!dialogResult) return;
@@ -803,39 +794,39 @@ export class BDNDActor extends Actor {
       return `<option value="${a.id}" ${a.id === this.id ? 'selected' : ''}>${a.name} (Stability: ${stab}/${max})</option>`;
     }).join('');
 
-    const dialogResult = await new Promise((resolve) => {
-      new Dialog({
-        title: 'Spend Reassurance',
-        content: `
-          <form class="bdnd-dialog">
-            <p class="bdnd-rule-note">
-              <strong>Reassurance</strong> — each point spent lowers the target's
-              Stability Risk Counter by <strong>2</strong> (RAW). Pool available: <strong>${available}</strong>.
-            </p>
-            <div class="form-group">
-              <label>Target Character:</label>
-              <select name="targetId" style="width:100%;">${charOptions}</select>
-            </div>
-            <div class="form-group">
-              <label>Points to Spend (Max: ${available}):</label>
-              <input type="number" name="spend" value="1" min="1" max="${available}" autofocus/>
-            </div>
-          </form>
-        `,
-        buttons: {
-          spend: {
-            label: "Spend",
-            icon: "<i class='fas fa-heart'></i>",
-            callback: (html) => resolve({
-              targetId: html.find('[name="targetId"]').val(),
-              spend:    Math.min(available, Math.max(1, parseInt(html.find('[name="spend"]').val()) || 1))
-            })
-          },
-          cancel: { label: "Cancel", callback: () => resolve(null) }
-        },
-        default: "spend",
-        close: () => resolve(null)
-      }).render(true);
+    const dialogResult = await DialogV2.prompt({
+      window: { title: 'Spend Reassurance' },
+      classes: ["bdnd-dialog"],
+      position: { width: 380 },
+      content: `
+        <form class="bdnd-dialog">
+          <p class="bdnd-rule-note">
+            <strong>Reassurance</strong> — each point spent lowers the target's
+            Stability Risk Counter by <strong>2</strong> (RAW). Pool available: <strong>${available}</strong>.
+          </p>
+          <div class="form-group">
+            <label>Target Character:</label>
+            <select name="targetId" style="width:100%;">${charOptions}</select>
+          </div>
+          <div class="form-group">
+            <label>Points to Spend (Max: ${available}):</label>
+            <input type="number" name="spend" value="1" min="1" max="${available}" autofocus/>
+          </div>
+        </form>
+      `,
+      ok: {
+        label: "Spend",
+        icon: "fas fa-heart",
+        callback: (event, button) => {
+          const fd = new FormDataExtended(button.form).object;
+          return {
+            targetId: fd.targetId,
+            spend:    Math.min(available, Math.max(1, parseInt(fd.spend) || 1))
+          };
+        }
+      },
+      buttons: [{ action: "cancel", label: "Cancel", callback: () => null }],
+      rejectClose: false
     });
 
     if (!dialogResult) return;
@@ -880,9 +871,10 @@ export class BDNDActor extends Actor {
       return;
     }
 
-    const confirmed = await Dialog.confirm({
-      title: "Spend Investigative Point?",
-      content: `<p>Spend 1 point of <strong>${label.toUpperCase()}</strong> to gain a clue or benefit?</p>`
+    const confirmed = await DialogV2.confirm({
+      window: { title: "Spend Investigative Point?" },
+      content: `<p>Spend 1 point of <strong>${label.toUpperCase()}</strong> to gain a clue or benefit?</p>`,
+      rejectClose: false
     });
 
     if (!confirmed) return;
@@ -974,57 +966,57 @@ export class BDNDActor extends Actor {
       const defaultTN     = Number(spell.system.target_tn) || 8;
       const maxExtraSpend = currentPool - level;
 
-      const dialogResult = await new Promise((resolve) => {
-        new Dialog({
-          title: `Cast Spell: ${spell.name}`,
-          content: `
-            <form class="bdnd-dialog">
-              <p class="bdnd-rule-note bdnd-spell-note">
-                <strong>Casting Ability Spell</strong> — drawn from ${poolLabel} pool (current: ${currentPool}).
-                Base cost: <strong>${level}</strong> pool point(s). Test usually TN 8.
-              </p>
-              <div class="form-group">
-                <label>Target Number (TN):</label>
-                <input type="number" name="tn" value="${defaultTN}" min="2" max="15"/>
-              </div>
-              <div class="form-group">
-                <label>Select Approach:</label>
-                <select name="approachKey" style="width:100%;">
-                  ${this._buildApproachOptions()}
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Extra Pool Spend beyond base cost (max ${maxExtraSpend}, adds +1 per point):</label>
-                <input type="number" name="spend" value="0" min="0" max="${maxExtraSpend}" autofocus/>
-              </div>
-              <div class="form-group bdnd-exploit-group">
-                <label>
-                  <input type="checkbox" name="exploit"/>
-                  GM Granted Exploit Point? (+2, requires extra pool spend)
-                </label>
-              </div>
-              ${stabReductionFields}
-            </form>
-          `,
-          buttons: {
-            cast: {
-              label: "Cast",
-              icon: "<i class='fas fa-magic'></i>",
-              callback: (html) => resolve({
-                tn:             parseInt(html.find('[name="tn"]').val())            || 8,
-                approachKey:    html.find('[name="approachKey"]').val(),
-                spend:          parseInt(html.find('[name="spend"]').val())          || 0,
-                exploit:        html.find('[name="exploit"]').is(':checked'),
-                stabCeremony:   html.find('[name="stabCeremony"]').is(':checked'),
-                stabDriveSpend: parseInt(html.find('[name="stabDriveSpend"]').val()) || 0,
-                stabComponent:  html.find('[name="stabComponent"]').is(':checked'),
-                stabLoreSheet:  html.find('[name="stabLoreSheet"]').is(':checked')
-              })
-            }
-          },
-          default: "cast",
-          close: () => resolve(null)
-        }).render(true);
+      const dialogResult = await DialogV2.prompt({
+        window: { title: `Cast Spell: ${spell.name}` },
+        classes: ["bdnd-dialog"],
+        position: { width: 380 },
+        content: `
+          <form class="bdnd-dialog">
+            <p class="bdnd-rule-note bdnd-spell-note">
+              <strong>Casting Ability Spell</strong> — drawn from ${poolLabel} pool (current: ${currentPool}).
+              Base cost: <strong>${level}</strong> pool point(s). Test usually TN 8.
+            </p>
+            <div class="form-group">
+              <label>Target Number (TN):</label>
+              <input type="number" name="tn" value="${defaultTN}" min="2" max="15"/>
+            </div>
+            <div class="form-group">
+              <label>Select Approach:</label>
+              <select name="approachKey" style="width:100%;">
+                ${this._buildApproachOptions()}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Extra Pool Spend beyond base cost (max ${maxExtraSpend}, adds +1 per point):</label>
+              <input type="number" name="spend" value="0" min="0" max="${maxExtraSpend}" autofocus/>
+            </div>
+            <div class="form-group bdnd-exploit-group">
+              <label>
+                <input type="checkbox" name="exploit"/>
+                GM Granted Exploit Point? (+2, requires extra pool spend)
+              </label>
+            </div>
+            ${stabReductionFields}
+          </form>
+        `,
+        ok: {
+          label: "Cast",
+          icon: "fas fa-magic",
+          callback: (event, button) => {
+            const fd = new FormDataExtended(button.form).object;
+            return {
+              tn:             parseInt(fd.tn) || 8,
+              approachKey:    fd.approachKey,
+              spend:          parseInt(fd.spend) || 0,
+              exploit:        !!fd.exploit,
+              stabCeremony:   !!fd.stabCeremony,
+              stabDriveSpend: parseInt(fd.stabDriveSpend) || 0,
+              stabComponent:  !!fd.stabComponent,
+              stabLoreSheet:  !!fd.stabLoreSheet
+            };
+          }
+        },
+        rejectClose: false
       });
 
       if (!dialogResult) return;
@@ -1115,34 +1107,34 @@ export class BDNDActor extends Actor {
 
     // ── CONCOCTION / RITUAL — always succeeds, no Test needed ─────────────
     } else {
-      const dialogResult = await new Promise((resolve) => {
-        new Dialog({
-          title: `Perform Ritual: ${spell.name}`,
-          content: `
-            <form class="bdnd-dialog">
-              <p class="bdnd-rule-note bdnd-spell-note">
-                <strong>Concoction / Ritual</strong> — drawn from ${poolLabel} pool (current: ${currentPool}).
-                Base cost: <strong>${level}</strong> pool point(s).
-                <br><em>Rituals always succeed. The GM may call for a Test only to check for complications.</em>
-              </p>
-              ${stabReductionFields}
-            </form>
-          `,
-          buttons: {
-            cast: {
-              label: "Perform Ritual",
-              icon: "<i class='fas fa-khanda'></i>",
-              callback: (html) => resolve({
-                stabCeremony:   html.find('[name="stabCeremony"]').is(':checked'),
-                stabDriveSpend: parseInt(html.find('[name="stabDriveSpend"]').val()) || 0,
-                stabComponent:  html.find('[name="stabComponent"]').is(':checked'),
-                stabLoreSheet:  html.find('[name="stabLoreSheet"]').is(':checked')
-              })
-            }
-          },
-          default: "cast",
-          close: () => resolve(null)
-        }).render(true);
+      const dialogResult = await DialogV2.prompt({
+        window: { title: `Perform Ritual: ${spell.name}` },
+        classes: ["bdnd-dialog"],
+        position: { width: 380 },
+        content: `
+          <form class="bdnd-dialog">
+            <p class="bdnd-rule-note bdnd-spell-note">
+              <strong>Concoction / Ritual</strong> — drawn from ${poolLabel} pool (current: ${currentPool}).
+              Base cost: <strong>${level}</strong> pool point(s).
+              <br><em>Rituals always succeed. The GM may call for a Test only to check for complications.</em>
+            </p>
+            ${stabReductionFields}
+          </form>
+        `,
+        ok: {
+          label: "Perform Ritual",
+          icon: "fas fa-khanda",
+          callback: (event, button) => {
+            const fd = new FormDataExtended(button.form).object;
+            return {
+              stabCeremony:   !!fd.stabCeremony,
+              stabDriveSpend: parseInt(fd.stabDriveSpend) || 0,
+              stabComponent:  !!fd.stabComponent,
+              stabLoreSheet:  !!fd.stabLoreSheet
+            };
+          }
+        },
+        rejectClose: false
       });
 
       if (!dialogResult) return;
@@ -1205,12 +1197,13 @@ export class BDNDActor extends Actor {
   /* -------------------------------------------- */
 
   async doRefreshEvent() {
-    const confirmed = await Dialog.confirm({
-      title: "Refresh Event",
+    const confirmed = await DialogV2.confirm({
+      window: { title: "Refresh Event" },
       content: `
         <p>This will restore <strong>all</strong> General Ability, Investigative Ability, and Approach pools to their Rating values.</p>
         <p><em>Stability Risk Counter is not affected — it can only be reduced via Reassurance.</em></p>
-      `
+      `,
+      rejectClose: false
     });
     if (!confirmed) return;
 
@@ -1272,15 +1265,16 @@ export class BDNDActor extends Actor {
       return ui.notifications.warn(`No Build Points remaining — cannot raise ${label}.`);
     }
 
-    const confirmed = await Dialog.confirm({
-      title: `Raise ${label}?`,
+    const confirmed = await DialogV2.confirm({
+      window: { title: `Raise ${label}?` },
       content: `
         <form class="bdnd-dialog">
           <p>Spend <strong>1 Build Point</strong> to raise <strong>${label}</strong>
              from Rating ${currentRating} to Rating ${newRating}?</p>
           <p class="bdnd-rule-note">Build Points available: <strong>${bp}</strong></p>
         </form>
-      `
+      `,
+      rejectClose: false
     });
     if (!confirmed) return;
 
@@ -1313,31 +1307,28 @@ export class BDNDActor extends Actor {
    * Athletics test; TN = 6 + number of foes being fled from.
    */
   async rollFleeing() {
-    const dialogResult = await new Promise(resolve => {
-      new Dialog({
-        title: 'Flee!',
-        content: `
-          <form class="bdnd-dialog">
-            <p class="bdnd-rule-note">
-              <strong>Fleeing (p.21):</strong> Make an Athletics test.<br>
-              TN = 6 + the number of foes you are fleeing from.
-            </p>
-            <div class="form-group">
-              <label>Number of foes fleeing from:</label>
-              <input type="number" name="numFoes" value="1" min="1" max="10" autofocus/>
-            </div>
-          </form>
-        `,
-        buttons: {
-          roll: {
-            label: 'Roll to Flee',
-            icon:  "<i class='fas fa-person-running'></i>",
-            callback: html => resolve({ numFoes: parseInt(html.find('[name="numFoes"]').val()) || 1 })
-          }
-        },
-        default: 'roll',
-        close:   () => resolve(null)
-      }).render(true);
+    const dialogResult = await DialogV2.prompt({
+      window: { title: 'Flee!' },
+      classes: ["bdnd-dialog"],
+      position: { width: 380 },
+      content: `
+        <form class="bdnd-dialog">
+          <p class="bdnd-rule-note">
+            <strong>Fleeing (p.21):</strong> Make an Athletics test.<br>
+            TN = 6 + the number of foes you are fleeing from.
+          </p>
+          <div class="form-group">
+            <label>Number of foes fleeing from:</label>
+            <input type="number" name="numFoes" value="1" min="1" max="10" autofocus/>
+          </div>
+        </form>
+      `,
+      ok: {
+        label: 'Roll to Flee',
+        icon: "fas fa-person-running",
+        callback: (event, button) => ({ numFoes: parseInt(new FormDataExtended(button.form).object.numFoes) || 1 })
+      },
+      rejectClose: false
     });
     if (!dialogResult) return;
 
@@ -1371,34 +1362,31 @@ export class BDNDActor extends Actor {
     const ratio    = isSelf ? 1 : 3;
     const targetName = isSelf ? 'yourself' : target.name;
 
-    const dialogResult = await new Promise(resolve => {
-      new Dialog({
-        title: 'Use Medicine',
-        content: `
-          <form class="bdnd-dialog">
-            <p class="bdnd-rule-note">
-              <strong>Medicine (p.21):</strong><br>
-              ${isSelf
-                ? 'Self-treating — 1 point spent reduces your Health Risk Counter by <strong>1</strong>.'
-                : `Treating <strong>${target.name}</strong> — 1 point spent reduces their Health Risk Counter by <strong>3</strong>.`
-              }
-            </p>
-            <div class="form-group">
-              <label>Points to spend (pool: ${available}):</label>
-              <input type="number" name="spend" value="1" min="1" max="${available}" autofocus/>
-            </div>
-          </form>
-        `,
-        buttons: {
-          apply: {
-            label: 'Apply',
-            icon:  "<i class='fas fa-briefcase-medical'></i>",
-            callback: html => resolve({ spend: parseInt(html.find('[name="spend"]').val()) || 1 })
-          }
-        },
-        default: 'apply',
-        close:   () => resolve(null)
-      }).render(true);
+    const dialogResult = await DialogV2.prompt({
+      window: { title: 'Use Medicine' },
+      classes: ["bdnd-dialog"],
+      position: { width: 380 },
+      content: `
+        <form class="bdnd-dialog">
+          <p class="bdnd-rule-note">
+            <strong>Medicine (p.21):</strong><br>
+            ${isSelf
+              ? 'Self-treating — 1 point spent reduces your Health Risk Counter by <strong>1</strong>.'
+              : `Treating <strong>${target.name}</strong> — 1 point spent reduces their Health Risk Counter by <strong>3</strong>.`
+            }
+          </p>
+          <div class="form-group">
+            <label>Points to spend (pool: ${available}):</label>
+            <input type="number" name="spend" value="1" min="1" max="${available}" autofocus/>
+          </div>
+        </form>
+      `,
+      ok: {
+        label: 'Apply',
+        icon: "fas fa-briefcase-medical",
+        callback: (event, button) => ({ spend: parseInt(new FormDataExtended(button.form).object.spend) || 1 })
+      },
+      rejectClose: false
     });
     if (!dialogResult) return;
 
