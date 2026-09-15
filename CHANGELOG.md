@@ -1,5 +1,18 @@
 # BD&D System Changelog
 
+## [2.0.0] — 2026-09-15
+
+### Changed — Rebuilt for Foundry V14
+
+- **Full rebuild onto V14 idioms.** Replaced the legacy `template.json` data model with per-type `TypeDataModel` classes, rebuilt every AppV1 `ActorSheet`/`ItemSheet` (Captain, NPC, Ship, Counter Board, Item) as `ApplicationV2` sheets, and converted every jQuery `new Dialog(...)` roll prompt (General Ability Test, Clutch Test, Stability Test, Contest, Cooperation, Spell Casting, and more) to `DialogV2`.
+- Ported the custom `Combat` subclass (SHAMUS initiative reference card), the combat-tracker drag-to-reorder, and the 🪙 coin-flip button to native DOM — no more jQuery anywhere in the system.
+- `compatibility` raised to minimum 14 / verified 14.367. **This release requires Foundry V14 and will no longer run on V12/V13.**
+- Added `lang/en.json` so sheet titles show proper labels ("Captain: Name", "Ship: Name", etc.) instead of Foundry's raw fallback key.
+- Fixed a chat-message crash caused by `ChatMessage.TYPES`/`CONST.CHAT_MESSAGE_TYPES`, both removed in V14.
+- Fixed a console error thrown on every actor update, caused by a `prepareBaseData()` override that skipped a core cleanup step.
+- Character sheet: window title now shows just the character's name (not every PC is a Captain), and its window icon now matches the NPC sheet's skull & crossbones.
+- No gameplay rules, dice math, or item/actor data changed — this is a platform rebuild, not a rules update.
+
 ## [1.3.3] — 2026-06-20
 
 ### Added — Weapons & Equipment Compendiums
