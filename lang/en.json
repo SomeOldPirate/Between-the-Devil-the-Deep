@@ -1,0 +1,15 @@
+{
+  "TYPES.Actor.character": "Captain",
+  "TYPES.Actor.npc": "NPC",
+  "TYPES.Actor.ship": "Ship",
+  "TYPES.Actor.counter_board": "Counter Board",
+
+  "TYPES.Item.item": "Item",
+  "TYPES.Item.lore_sheet": "Lore Sheet",
+  "TYPES.Item.weapon": "Weapon",
+  "TYPES.Item.condition": "Condition",
+  "TYPES.Item.armor": "Armor",
+  "TYPES.Item.spell": "Spell / Ritual",
+  "TYPES.Item.drive": "Drive",
+  "TYPES.Item.cherry": "Cherry"
+}

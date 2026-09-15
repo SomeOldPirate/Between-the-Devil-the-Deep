@@ -4,12 +4,9 @@ const { FormDataExtended } = foundry.applications.ux;
 export class BDNDActor extends Actor {
 
   /** @override */
-  prepareData() {
-    super.prepareData();
+  prepareBaseData() {
+    super.prepareBaseData();
   }
-
-  /** @override */
-  prepareBaseData() { }
 
   /** @override */
   prepareDerivedData() {

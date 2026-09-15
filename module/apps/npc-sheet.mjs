@@ -14,6 +14,7 @@ export default class BDNDNpcSheet extends BDNDCreatureSheet {
   /** @inheritdoc */
   static DEFAULT_OPTIONS = {
     id: "bdnd-npc-{id}",
+    classes: ["npc"],
     position: { width: 520, height: 680 },
     window: { icon: "fa-solid fa-skull-crossbones" },
     actions: {

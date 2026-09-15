@@ -1,3 +1,7 @@
+{{!-- A non-root template part must render a single HTML element, so the
+     whole always-visible top section is wrapped in this div. --}}
+<div class="pc-header-part">
+
 {{!-- ══ HEADER ══════════════════════════════════════════════════════ --}}
 <header class="pc-header">
   <img src="{{actor.img}}" data-action="editImage" data-edit="img" title="{{actor.name}}" class="actor-portrait pc-portrait"/>
@@ -119,3 +123,5 @@
   {{/if}}
   <a data-action="itemCreate" data-type="condition" class="add-condition-btn"><i class="fas fa-plus"></i> Add Condition</a>
 </div>
+
+</div>{{!-- /.pc-header-part --}}

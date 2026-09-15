@@ -20,6 +20,9 @@
     "css/bdnd.css"
   ],
   "scripts": [],
+  "languages": [
+    { "lang": "en", "name": "English", "path": "lang/en.json" }
+  ],
 
   "documentTypes": {
     "Actor": {
@@ -67,7 +70,7 @@
   "flags": {
     "hotReload": {
       "extensions": ["css", "hbs", "json"],
-      "paths": ["css", "templates"]
+      "paths": ["css", "templates", "lang"]
     }
   },
 
