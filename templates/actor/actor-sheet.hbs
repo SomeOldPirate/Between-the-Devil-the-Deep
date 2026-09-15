@@ -27,7 +27,12 @@
     <div class="ledger-grid">
       {{#each approachList as |approach|}}
       <div class="ledger-col">
-        <span class="ledger-lbl">{{approach.label}}</span>
+        <div class="ledger-lbl-row">
+          <span class="ledger-lbl">{{approach.label}}</span>
+          {{#each approach.conditionBadges as |badge|}}
+            <span class="approach-cond-badge {{badge.type}}" title="{{badge.name}} — −1 to all {{../approach.label}} Tests">−1</span>
+          {{/each}}
+        </div>
         <div class="ledger-rtg-row">
           <span class="ledger-rtg-label">Rtg</span>
           <input type="number" name="system.approaches.{{approach.key}}.rating"
@@ -136,6 +141,7 @@
         </a>
         <a class="roll-contest"><i class="fas fa-swords"></i> Contest</a>
         <a class="roll-cooperation"><i class="fas fa-people-carry"></i> Cooperate</a>
+        <a class="roll-flee" title="Fleeing — Athletics test, TN 6 + number of foes (SHAMUS p.21)"><i class="fas fa-person-running"></i> Flee!</a>
         <a class="refresh-event"><i class="fas fa-undo"></i> Refresh</a>
         <span class="bp-display" title="Build Points available for advancement">BP: {{system.build_points.value}}</span>
       </div>
@@ -155,7 +161,10 @@
             <td><a class="roll-general ability-roll-label" data-key="{{ability.key}}">{{ability.label}}</a></td>
             <td><input type="number" name="system.abilities.general.{{ability.key}}.rating" value="{{ability.rating}}"/></td>
             <td><input type="number" name="system.abilities.general.{{ability.key}}.value"  value="{{ability.value}}" class="pool-input"/></td>
-            <td>{{#if ../system.build_points.value}}<a class="raise-rating" data-type="general" data-key="{{ability.key}}" title="Spend 1 Build Point to raise {{ability.label}} Rating"><i class="fas fa-arrow-up"></i></a>{{/if}}</td>
+            <td>
+              {{#if (eq ability.key "medicine")}}<a class="use-medicine" title="Use Medicine — 1pt heals 3 Health Counter (ally) or 1 Health Counter (self) — SHAMUS p.21"><i class="fas fa-kit-medical"></i></a>{{/if}}
+              {{#if ../system.build_points.value}}<a class="raise-rating" data-type="general" data-key="{{ability.key}}" title="Spend 1 Build Point to raise {{ability.label}} Rating"><i class="fas fa-arrow-up"></i></a>{{/if}}
+            </td>
           </tr>
           {{/each}}
         </tbody>

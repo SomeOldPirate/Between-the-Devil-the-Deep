@@ -18,13 +18,18 @@ export class BDNDActorSheet extends ActorSheet {
     // Persist show-all toggle in actor flags so it survives close/reopen
     context.showAllAbilities = await this.actor.getFlag("bdnd", "showAllAbilities") ?? false;
 
-    // Precompute pip arrays — each pip is {full: bool}; done in JS to avoid HBS scope bugs
+    // Precompute pip arrays and attach any Conditions on each Approach
+    // (Conditions already apply a -1 penalty to rolls; this makes it visible on the sheet)
+    const allConditions = (context.items ?? []).filter(i => i.type === 'condition');
     context.approachList = Object.entries(context.system.approaches ?? {}).map(([key, approach]) => {
       const rating = approach.rating ?? 0;
       const pool   = approach.value  ?? 0;
       const pips   = [];
       for (let i = 0; i < rating; i++) pips.push({ full: i < pool });
-      return { key, label: approach.label, rating, pool, pips };
+      const conditionBadges = allConditions
+        .filter(c => c.system.approach === key)
+        .map(c => ({ name: c.name, type: c.system.conditionType }));
+      return { key, label: approach.label, rating, pool, pips, conditionBadges };
     });
 
     const formatAbilityName = (key) =>
@@ -104,6 +109,8 @@ export class BDNDActorSheet extends ActorSheet {
     html.find('.spend-reassurance').click(() => this.actor.spendReassurance());
     html.find('.roll-clutch').click(() => this.actor.rollClutchTest());
     html.find('.roll-stability').click(() => this.actor.rollStabilityTest());
+    html.find('.roll-flee').click(() => this.actor.rollFleeing());
+    html.find('.use-medicine').click(() => this.actor.useMedicine());
     html.find('.roll-contest').click(() => this.actor.rollContest());
     html.find('.roll-cooperation').click(() => this.actor.rollCooperation());
     html.find('.roll-weapon-attack').click(this._onRollWeaponAttack.bind(this));
@@ -191,7 +198,8 @@ export class BDNDActorSheet extends ActorSheet {
 
     // Open the roll dialog first; only deduct ammo if the player commits
     await this.actor.rollGeneralAbility(item.system.ability || "weapons", {
-      title: `Attack: ${item.name}`
+      title: `Attack: ${item.name}`,
+      weapon: item
     });
 
     // If we get here the dialog was confirmed (rollGeneralAbility resolves after
@@ -302,6 +310,22 @@ export class BDNDNPCSheet extends BDNDActorSheet {
       width: 520,
       height: 680,
       tabs: []
+    });
+  }
+
+  async getData() {
+    const context = await super.getData();
+    // Named NPCs have full Conditions; Regular NPCs are Taken Out at max counter (no Conditions)
+    context.npcType       = await this.actor.getFlag('bdnd', 'npcType') ?? 'named';
+    context.isRegularNPC  = context.npcType === 'regular';
+    return context;
+  }
+
+  activateListeners(html) {
+    super.activateListeners(html);
+    html.find('.toggle-npc-type').click(async () => {
+      const current = await this.actor.getFlag('bdnd', 'npcType') ?? 'named';
+      await this.actor.setFlag('bdnd', 'npcType', current === 'named' ? 'regular' : 'named');
     });
   }
 }

@@ -2,7 +2,7 @@
   "id": "bdnd",
   "title": "Between the Devil & the Deep",
   "description": "The SHAMUS/GUMSHOE system for the Golden Age of Piracy.",
-  "version": "1.2.7",
+  "version": "1.3.3",
   "compatibility": {
     "minimum": "12",
     "verified": "13"
@@ -20,7 +20,29 @@
     "css/bdnd.css"
   ],
   "scripts": [],
-  "packs": [],
+  "packs": [
+    {
+      "name": "spells",
+      "label": "Magic & Voodoo — Spells & Rituals",
+      "path": "packs/spells",
+      "type": "Item",
+      "system": "bdnd"
+    },
+    {
+      "name": "weapons",
+      "label": "Weapons & Equipment — Weapons",
+      "path": "packs/weapons",
+      "type": "Item",
+      "system": "bdnd"
+    },
+    {
+      "name": "equipment",
+      "label": "Weapons & Equipment — Sundry Items",
+      "path": "packs/equipment",
+      "type": "Item",
+      "system": "bdnd"
+    }
+  ],
   "url": "",
   "manifest": "https://github.com/SomeOldPirate/Between-the-Devil-the-Deep/releases/latest/download/system.json",
   "download": "https://github.com/SomeOldPirate/Between-the-Devil-the-Deep/releases/latest/download/bdnd.zip"

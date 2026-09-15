@@ -2,6 +2,7 @@ import { BDNDActor } from "./actor.mjs";
 import { BDNDActorSheet, BDNDNPCSheet } from "./sheets/actor-sheet.mjs";
 import { BDNDShipSheet } from "./sheets/ship-sheet.mjs";
 import { BDNDItemSheet } from "./sheets/item-sheet.mjs";
+import { BDNDCounterBoardSheet } from "./sheets/counter-board-sheet.mjs";
 
 // ── Coin Flip ───────────────────────────────────────────────────────────────
 // Rolls 1dc (Foundry v12+ native coin die). DSN animates it as the custom
@@ -112,15 +113,32 @@ Hooks.once("init", async function() {
   CONFIG.Actor.documentClass  = BDNDActor;
   CONFIG.Combat.documentClass = BDNDCombat;
 
+  // ── Token resource bars — Health and Stability auto-appear on new tokens ───
+  // Tells Foundry which actor attributes are valid resource bars so they show
+  // up in the token configuration dropdown and can be assigned to bar1/bar2.
+  CONFIG.Actor.trackableAttributes = {
+    character: {
+      bar:   ["health", "stability"],
+      value: []
+    },
+    npc: {
+      bar:   ["health", "stability"],
+      value: []
+    },
+    ship:  { bar: [], value: [] },
+    counter_board: { bar: [], value: [] }
+  };
+
   // Initiative is adjudicated by the GM per SHAMUS rules (no automatic roll).
   // "Roll Initiative" posts a reference card; the GM drags combatants to order.
   // Coin flip (Tails wins) is available via the 🪙 button in the tracker.
   CONFIG.Combat.initiative = { formula: "1dc", decimals: 0 };
 
   Actors.unregisterSheet("core", ActorSheet);
-  Actors.registerSheet("bdnd", BDNDActorSheet, { types: ["character"], makeDefault: true, label: "Captain Sheet" });
-  Actors.registerSheet("bdnd", BDNDNPCSheet,   { types: ["npc"],       makeDefault: true, label: "NPC Sheet" });
-  Actors.registerSheet("bdnd", BDNDShipSheet,  { types: ["ship"],      makeDefault: true, label: "Ship Tracker" });
+  Actors.registerSheet("bdnd", BDNDActorSheet,       { types: ["character"],    makeDefault: true, label: "Captain Sheet" });
+  Actors.registerSheet("bdnd", BDNDNPCSheet,         { types: ["npc"],          makeDefault: true, label: "NPC Sheet" });
+  Actors.registerSheet("bdnd", BDNDShipSheet,        { types: ["ship"],         makeDefault: true, label: "Ship Tracker" });
+  Actors.registerSheet("bdnd", BDNDCounterBoardSheet,{ types: ["counter_board"],makeDefault: true, label: "Counter Board" });
 
   Items.unregisterSheet("core", ItemSheet);
   Items.registerSheet("bdnd", BDNDItemSheet, { makeDefault: true });
@@ -335,11 +353,77 @@ Hooks.once("ready", () => {
   }
 });
 
+// ── Auto Taken Out → Clutch Test prompt ────────────────────────────────────
+// When a character's or NPC's Health Risk Counter reaches its maximum the GM
+// sees a chat card and is offered a button to open the Clutch Test dialog on
+// behalf of the affected actor. This mirrors the SHAMUS "Taken Out" rule:
+// reaching max Health forces a Clutch Test (p.20).
+Hooks.on('updateActor', async (actor, changes, _options, _userId) => {
+  // Only react to Health counter changes on characters and named NPCs
+  if (!['character', 'npc'].includes(actor.type)) return;
+  const newVal = foundry.utils.getProperty(changes, 'system.health.value');
+  if (newVal === undefined) return;                    // health didn't change
+
+  const max = actor.system.health?.max ?? actor.system.health?.base ?? 8;
+  if (newVal < max) return;                            // not at max yet
+
+  // Check flag so we only alert once per "hit-max" event, not on every save
+  const alreadyFlagged = await actor.getFlag('bdnd', 'healthMaxAlerted') ?? false;
+  if (alreadyFlagged) return;
+  await actor.setFlag('bdnd', 'healthMaxAlerted', true);
+
+  // Post Taken Out alert to chat
+  const isRegular = (await actor.getFlag('bdnd', 'npcType') ?? 'named') === 'regular';
+  const outcomeText = isRegular
+    ? 'This is a <strong>Regular NPC</strong> — they are immediately <strong>Taken Out</strong>.'
+    : 'A <strong>Clutch Test</strong> is required — click below to roll (SHAMUS p.20).';
+
+  await ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor }),
+    content: `
+      <div class="bdnd-roll">
+        <h2 style="color:#8b0000;"><i class="fas fa-skull"></i> Taken Out! — ${actor.name}</h2>
+        <p>${actor.name}'s Health Risk Counter has reached maximum (${max}).</p>
+        <p>${outcomeText}</p>
+        ${!isRegular ? `
+        <div style="margin-top:6px;">
+          <button class="bdnd-clutch-trigger"
+                  data-actor-id="${actor.id}"
+                  style="width:100%; padding:4px 8px; cursor:pointer;">
+            <i class="fas fa-dice"></i> Roll Clutch Test for ${actor.name}
+          </button>
+        </div>` : ''}
+      </div>
+    `
+  });
+});
+
+// Handle the Clutch Test button inside chat — delegate to the actor method
+Hooks.on('renderChatMessage', (_msg, html) => {
+  html.find('.bdnd-clutch-trigger').click(ev => {
+    const actorId = ev.currentTarget.dataset.actorId;
+    const actor   = game.actors?.get(actorId);
+    actor?.rollClutchTest();
+  });
+});
+
+// Clear the healthMaxAlerted flag when health drops below max (recovery)
+Hooks.on('updateActor', async (actor, changes) => {
+  if (!['character', 'npc'].includes(actor.type)) return;
+  const newVal = foundry.utils.getProperty(changes, 'system.health.value');
+  if (newVal === undefined) return;
+  const max = actor.system.health?.max ?? actor.system.health?.base ?? 8;
+  if (newVal < max) {
+    await actor.unsetFlag('bdnd', 'healthMaxAlerted');
+  }
+});
+
 async function preloadHandlebarsTemplates() {
   return loadTemplates([
     "systems/bdnd/templates/actor/actor-sheet.hbs",
     "systems/bdnd/templates/actor/npc-sheet.hbs",
     "systems/bdnd/templates/actor/ship-sheet.hbs",
+    "systems/bdnd/templates/actor/counter-board-sheet.hbs",
     "systems/bdnd/templates/item/item-sheet.hbs"
   ]);
 }

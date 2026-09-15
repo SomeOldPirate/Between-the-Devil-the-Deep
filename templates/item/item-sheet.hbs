@@ -61,22 +61,31 @@
 
         {{#if (eq item.type "spell")}}
             <div class="form-group">
-                <label>Spell Level</label>
-                <select name="system.level">
-                    {{#select system.level}}
-                    <option value="1">1 — Cantrip</option>
-                    <option value="2">2 — Minor</option>
-                    <option value="3">3 — Major</option>
-                    <option value="4">4 — Greater</option>
-                    <option value="5">5 — Ritual</option>
+                <label>Spell Type</label>
+                <select name="system.spell_type">
+                    {{#select system.spell_type}}
+                    <option value="casting">Casting Ability Spell — requires Test (TN 8), drawn from Spell Casting pool</option>
+                    <option value="concoction">Concoction / Ritual — always succeeds, drawn from Voodoo pool</option>
                     {{/select}}
                 </select>
             </div>
             <div class="form-group">
-                <label>Default Cast TN <span class="field-hint">(pre-filled in cast dialog)</span></label>
-                <input type="number" name="system.target_tn" value="{{system.target_tn}}"
-                       min="2" max="15" placeholder="5"/>
+                <label>Spell Level <span class="field-hint">(Stability damage: Lv1=2, Lv2=4, Lv3=6)</span></label>
+                <select name="system.level">
+                    {{#select system.level}}
+                    <option value="1">1 — Minor</option>
+                    <option value="2">2 — Major</option>
+                    <option value="3">3 — Greater</option>
+                    {{/select}}
+                </select>
             </div>
+            {{#if (eq system.spell_type "casting")}}
+            <div class="form-group">
+                <label>Default Cast TN <span class="field-hint">(pre-filled in cast dialog, usually 8)</span></label>
+                <input type="number" name="system.target_tn" value="{{system.target_tn}}"
+                       min="2" max="15" placeholder="8"/>
+            </div>
+            {{/if}}
         {{/if}}
 
         {{#if (eq item.type "armor")}}

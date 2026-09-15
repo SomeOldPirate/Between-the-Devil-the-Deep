@@ -1,0 +1,99 @@
+<form class="{{cssClass}} bdnd-counter-board" autocomplete="off">
+
+  {{!-- ══ HEADER ══════════════════════════════════════════════════════════ --}}
+  <header class="counter-board-header">
+    <div class="counter-board-title-row">
+      <i class="fas fa-chart-bar counter-board-icon"></i>
+      <input name="name" type="text" value="{{actor.name}}"
+             placeholder="Counter Board Name" class="counter-board-name-input"/>
+      <button type="button" class="ctr-add-new counter-board-add" title="Add a new counter">
+        <i class="fas fa-plus-circle"></i> Add Counter
+      </button>
+    </div>
+    <p class="bdnd-rule-note counter-board-rule">
+      <strong>Risk Counters</strong> track background danger — they rise on failed tests.
+      <strong>Progress Counters</strong> track proximity to a goal — they rise when PCs succeed.
+      Roll 1d6 to step; PCs reduce with their own 1d6. See SHAMUS pp. 23–25.
+    </p>
+  </header>
+
+  {{!-- ══ COUNTER LIST ═══════════════════════════════════════════════════ --}}
+  <section class="counter-board-body">
+
+    {{#if counters.length}}
+    <div class="counter-list">
+      {{#each counters as |c|}}
+      <div class="ctr-card {{c.danger}} {{#if c.atMax}}ctr-at-max{{/if}}">
+
+        {{!-- Name row --}}
+        <div class="ctr-header-row">
+          <input class="ctr-name-input" type="text" value="{{c.name}}"
+                 data-id="{{c.id}}" placeholder="Counter name" title="Click to rename"/>
+          <select class="ctr-type-select" data-id="{{c.id}}" title="Counter type">
+            <option value="risk"     {{#if (eq c.type "risk")}}selected{{/if}}>Risk</option>
+            <option value="progress" {{#if (eq c.type "progress")}}selected{{/if}}>Progress</option>
+          </select>
+          <div class="ctr-value-display">
+            <span class="ctr-current ctr-current-{{c.danger}}">{{c.current}}</span>
+            <span class="ctr-sep">/</span>
+            <input class="ctr-max-input" type="number" value="{{c.max}}"
+                   data-id="{{c.id}}" min="1" max="99" title="Maximum value"/>
+          </div>
+          <a class="ctr-delete" data-id="{{c.id}}" title="Remove this counter">
+            <i class="fas fa-times"></i>
+          </a>
+        </div>
+
+        {{!-- Progress bar --}}
+        <div class="ctr-bar-wrap">
+          <div class="ctr-bar ctr-bar-{{c.danger}}" style="width:{{c.pct}}%;"></div>
+          {{#if c.atMax}}
+          <span class="ctr-max-label">MAX</span>
+          {{/if}}
+        </div>
+
+        {{!-- Action buttons --}}
+        <div class="ctr-button-row">
+          <button type="button" class="ctr-btn ctr-decrement" data-id="{{c.id}}"
+                  title="Decrease by 1">
+            <i class="fas fa-minus"></i>&thinsp;1
+          </button>
+          <button type="button" class="ctr-btn ctr-increment" data-id="{{c.id}}"
+                  title="Increase by 1">
+            <i class="fas fa-plus"></i>&thinsp;1
+          </button>
+          <button type="button" class="ctr-btn ctr-btn-reduce ctr-roll-reduce" data-id="{{c.id}}"
+                  title="PCs reduce counter: roll 1d6 and subtract from current value">
+            <i class="fas fa-dice"></i>&thinsp;−1d6
+          </button>
+          <button type="button" class="ctr-btn ctr-btn-risk ctr-roll-add" data-id="{{c.id}}"
+                  title="Counter rises: roll 1d6 and add to current value (GM trigger / failed test)">
+            <i class="fas fa-dice"></i>&thinsp;+1d6
+          </button>
+        </div>
+
+      </div>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="ctr-empty">
+      <i class="fas fa-chart-bar ctr-empty-icon"></i>
+      <p class="bdnd-rule-note">
+        No counters yet.<br>
+        Click <strong>Add Counter</strong> above to create a Risk or Progress Counter.
+      </p>
+    </div>
+    {{/if}}
+
+  </section>
+
+  {{!-- ══ GM NOTES ════════════════════════════════════════════════════════ --}}
+  <div class="counter-board-notes">
+    <label class="counter-board-notes-label">
+      <i class="fas fa-scroll"></i> GM Notes
+    </label>
+    <textarea name="system.notes" rows="3"
+              placeholder="Threshold descriptions, trigger conditions, scene context…">{{system.notes}}</textarea>
+  </div>
+
+</form>

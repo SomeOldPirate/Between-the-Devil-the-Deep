@@ -16,6 +16,20 @@ export class BDNDActor extends Actor {
     if (actorData.type === 'character') this._prepareCharacterData(actorData);
   }
 
+  /**
+   * Auto-configure default token resource bars for PC and NPC actors.
+   * Fires once when the actor is first created, before it is saved.
+   */
+  async _preCreate(data, options, user) {
+    await super._preCreate(data, options, user);
+    if (this.type === 'character' || this.type === 'npc') {
+      this.prototypeToken.updateSource({
+        bar1: { attribute: 'health' },
+        bar2: { attribute: 'stability' }
+      });
+    }
+  }
+
   _prepareCharacterData(actorData) {
     // Derive Health and Stability Risk Counter maxes from base + Cherry bonuses.
     // base is the GM-editable ceiling (stored in template, never overwritten here).
@@ -52,7 +66,7 @@ export class BDNDActor extends Actor {
   }
 
   /** Post a roll result to chat, with automatic Greater Success and Complication detection. */
-  async _postRollMessage({ title, roll, tn, breakdownHTML, successLabel, failLabel, colorAccent = '', isCombat = false, isRanged = false }) {
+  async _postRollMessage({ title, roll, tn, breakdownHTML, successLabel, failLabel, colorAccent = '', isCombat = false, isRanged = false, weapon = null }) {
     const isSuccess       = roll.total >= tn;
     const isGreaterSuccess = isSuccess && (roll.total >= tn + 3);
 
@@ -94,6 +108,23 @@ export class BDNDActor extends Actor {
       complicationHTML = `<div class="bdnd-complication">⚠ Complication (natural 1 rolled) — something goes wrong even on a success.${combatNote}</div>`;
     }
 
+    // Auto damage roll — only on a hit when the attack was initiated from a weapon item
+    let damageRoll = null;
+    let damageHTML = '';
+    if (isSuccess && weapon) {
+      const bonus = weapon.system.bonus ?? 0;
+      damageRoll = new Roll(`1d6 + ${bonus}`);
+      await damageRoll.evaluate();
+      const dieResult = damageRoll.terms[0]?.results?.[0]?.result ?? '?';
+      const bonusStr  = bonus !== 0 ? ` + ${bonus}` : '';
+      damageHTML = `
+        <div class="bdnd-damage-result">
+          <span class="bdnd-damage-label">💥 Damage:</span>
+          <strong>${damageRoll.total}</strong>
+          <span class="tn-label">(1d6[${dieResult}]${bonusStr} — ${weapon.name})</span>
+        </div>`;
+    }
+
     const accentStyle = colorAccent ? `border-color: ${colorAccent};` : '';
     const titleStyle  = colorAccent ? `color: ${colorAccent};` : '';
 
@@ -108,12 +139,13 @@ export class BDNDActor extends Actor {
             <div class="tn-label">(Target Number: ${tn})</div>
             ${resultSpan}
           </div>
+          ${damageHTML}
           ${greaterSuccessHTML}
           ${complicationHTML}
         </div>
       `,
       type: ChatMessage.TYPES.ROLL,
-      rolls: [roll]
+      rolls: damageRoll ? [roll, damageRoll] : [roll]
     });
   }
 
@@ -130,12 +162,46 @@ export class BDNDActor extends Actor {
     const rollTitle = options.title || BDNDActor.formatKey(abilityKey).toUpperCase();
     const unskilledPenalty = ability.rating === 0 ? -2 : 0;
 
+    // Identify combat abilities for flanking / range-band features
+    const ALL_COMBAT_ABS    = new Set(['weapons', 'scuffling', 'firearms', 'artillery', 'traps_bombs']);
+    const isCombatAbility   = ALL_COMBAT_ABS.has(abilityKey);
+
+    // Flanking checkbox — combat attacks only, not contests
+    const flankingField = isCombatAbility && !isContest ? `
+      <div class="form-group bdnd-exploit-group">
+        <label>
+          <input type="checkbox" name="flanking" onchange="
+            const tn = this.closest('form').querySelector('[name=tn]');
+            tn.value = parseInt(tn.value) + (this.checked ? -2 : 2);
+          "/>
+          Flanking Advantage? (−2 TN, attacking from behind)
+        </label>
+      </div>` : '';
+
+    // Range band dropdown — only for ranged combat abilities, not for contests
+    const RANGED_ATTACK_ABILITIES = new Set(['firearms', 'artillery', 'traps_bombs']);
+    const isRangedAttack = RANGED_ATTACK_ABILITIES.has(abilityKey) && !isContest;
+    const rangeBandField = isRangedAttack ? `
+      <div class="form-group">
+        <label>Range Band (sets TN):</label>
+        <select name="rangeBand" style="width:100%;" onchange="
+          const m={pointblank:6,standard:8,medium:10,long:12};
+          this.closest('form').querySelector('[name=tn]').value = m[this.value] ?? 8;
+        ">
+          <option value="pointblank">Point Blank / Exposed — TN 6</option>
+          <option value="standard" selected>Standard — TN 8</option>
+          <option value="medium">Medium — TN 10</option>
+          <option value="long">Long — TN 12</option>
+        </select>
+      </div>` : '';
+
     // Check for a Cherry on this ability
     const cherry = this.items.find(i => i.type === 'cherry' && i.system.ability === abilityKey);
     const cherryName = cherry?.name ?? null;
     const hasPostRollSpend = cherry?.system.has_post_roll_spend ?? false;
 
-    // Contest mode: no TN field
+    // Contest mode: no TN field; otherwise pre-fill from options (e.g. Flee sets TN automatically)
+    const defaultTN = options.tn ?? 8;
     const tnField = isContest
       ? `<p class="bdnd-rule-note">
            <strong>Contest:</strong> Both sides roll independently.
@@ -143,7 +209,7 @@ export class BDNDActor extends Actor {
          </p>`
       : `<div class="form-group">
            <label>Target Number (TN):</label>
-           <input type="number" name="tn" value="8" min="2" max="13"/>
+           <input type="number" name="tn" value="${defaultTN}" min="2" max="13"/>
          </div>`;
 
     // Cherry reminder shown in dialog
@@ -166,6 +232,7 @@ export class BDNDActor extends Actor {
               </label>
             </div>
             ${cherryBlock}
+            ${rangeBandField}
             ${tnField}
             <div class="form-group">
               <label>Select Approach (adds its Rating free):</label>
@@ -177,6 +244,7 @@ export class BDNDActor extends Actor {
               <label>Spend Ability Pool Points (Max: ${currentPool}):</label>
               <input type="number" name="spend" value="0" min="0" max="${currentPool}" autofocus/>
             </div>
+            ${flankingField}
             <div class="form-group bdnd-exploit-group">
               <label>
                 <input type="checkbox" name="exploit"/>
@@ -190,10 +258,12 @@ export class BDNDActor extends Actor {
             label: isContest ? "Roll My Side" : "Roll Die",
             icon: isContest ? "<i class='fas fa-swords'></i>" : "<i class='fas fa-dice'></i>",
             callback: (html) => resolve({
-              tn: parseInt(html.find('[name="tn"]').val()) || 5,
+              tn:        parseInt(html.find('[name="tn"]').val()) || 8,
+              rangeBand: html.find('[name="rangeBand"]').val() || null,
+              flanking:  html.find('[name="flanking"]').is(':checked'),
               approachKey: html.find('[name="approachKey"]').val(),
-              spend: parseInt(html.find('[name="spend"]').val()) || 0,
-              exploit: html.find('[name="exploit"]').is(':checked')
+              spend:     parseInt(html.find('[name="spend"]').val()) || 0,
+              exploit:   html.find('[name="exploit"]').is(':checked')
             })
           }
         },
@@ -239,6 +309,11 @@ export class BDNDActor extends Actor {
       <div class="bdnd-breakdown-row"><span>Approach (${approachLabel}):</span><strong>+${approachMod}</strong></div>
       <div class="bdnd-breakdown-row"><span>Pool Spent:</span><strong>+${dialogResult.spend}</strong></div>
     `;
+    if (dialogResult.rangeBand) {
+      const rangeBandLabels = { pointblank: 'Point Blank / Exposed', standard: 'Standard', medium: 'Medium', long: 'Long' };
+      breakdownHTML += `<div class="bdnd-breakdown-row"><span>Range Band:</span><strong>${rangeBandLabels[dialogResult.rangeBand] ?? dialogResult.rangeBand} (TN ${dialogResult.tn})</strong></div>`;
+    }
+    if (dialogResult.flanking) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>Flanking Advantage:</span><strong>−2 TN</strong></div>`;
     if (unskilledPenalty !== 0) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Unskilled:</span><strong>−2</strong></div>`;
     if (exploitBonus !== 0)     breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>Exploit Point:</span><strong>+2</strong></div>`;
     if (conditionPenalty !== 0) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Condition (${activeConditions.length}×):</span><strong>${conditionPenalty}</strong></div>`;
@@ -273,7 +348,8 @@ export class BDNDActor extends Actor {
       await this._postRollMessage({
         title: rollTitle, roll, tn: dialogResult.tn, breakdownHTML,
         isCombat: COMBAT_ABILITIES.has(abilityKey),
-        isRanged:  RANGED_ABILITIES.has(abilityKey)
+        isRanged:  RANGED_ABILITIES.has(abilityKey),
+        weapon:    options.weapon ?? null
       });
     }
   }
@@ -835,132 +911,293 @@ export class BDNDActor extends Actor {
     const spell = this.items.get(itemId);
     if (!spell) return;
 
-    const level = Number(spell.system.level) || 1;
-    const defaultTN = Number(spell.system.target_tn) || 5;
-    const abilityKey = "spell_casting";
-    const ability = this.system.abilities.general[abilityKey];
+    const level     = Math.min(3, Math.max(1, Number(spell.system.level) || 1));
+    const spellType = spell.system.spell_type ?? 'casting';  // 'casting' | 'concoction'
+    const baseSta   = level * 2;                             // RAW: Lv1=2, Lv2=4, Lv3=6
 
-    if (!ability) return ui.notifications.error("You do not have the Spell Casting ability.");
+    // ── Which ability pool to draw from ───────────────────────────────────
+    // Casting Ability spells → Spell Casting (General)
+    // Concoction / Ritual    → Voodoo (Investigative)
+    const isCasting    = spellType === 'casting';
+    const abilityKey   = isCasting ? 'spell_casting' : 'voodoo';
+    const abilityGroup = isCasting ? 'general' : 'investigative';
+    const ability      = this.system.abilities[abilityGroup]?.[abilityKey];
+    const poolLabel    = isCasting ? 'Spell Casting' : 'Voodoo';
+
+    if (!ability || ability.rating === 0) {
+      return ui.notifications.error(
+        isCasting
+          ? `${this.name} has no Spell Casting rating and cannot cast Casting Ability spells.`
+          : `${this.name} has no Voodoo rating and cannot perform Concoction rituals.`
+      );
+    }
 
     const currentPool = ability.value ?? 0;
     if (currentPool < level) {
-      return ui.notifications.warn(`Not enough Spell Casting pool to cast a Level ${level} spell (need ${level}, have ${currentPool}).`);
+      return ui.notifications.warn(
+        `Not enough ${poolLabel} pool to cast a Level ${level} spell (need ${level}, have ${currentPool}).`
+      );
     }
 
-    const maxExtraSpend = currentPool - level;
-    const unskilledPenalty = ability.rating === 0 ? -2 : 0;
+    // ── Stability reduction fields (shared by both paths) ─────────────────
+    const stabReductionFields = `
+      <hr style="border-color:#8c6d53; margin:8px 0;">
+      <p class="bdnd-rule-note" style="margin-bottom:6px;">
+        <strong>Stability Damage:</strong> ${baseSta} points (Level ${level} × 2).
+        Reduce with any of the following:
+      </p>
+      <div class="form-group bdnd-exploit-group">
+        <label>
+          <input type="checkbox" name="stabCeremony"/>
+          Ceremony (dancing, singing, or Loa possession) <strong>−2</strong>
+        </label>
+      </div>
+      <div class="form-group">
+        <label>Drive-related spell — spend pool points (0–2, reduces 1 for 1):</label>
+        <input type="number" name="stabDriveSpend" value="0" min="0" max="2"/>
+      </div>
+      <div class="form-group bdnd-exploit-group">
+        <label>
+          <input type="checkbox" name="stabComponent"/>
+          Component / talisman (costs ${level} Coin) <strong>−1</strong>
+        </label>
+      </div>
+      <div class="form-group bdnd-exploit-group">
+        <label>
+          <input type="checkbox" name="stabLoreSheet"/>
+          Spend a Lore Sheet point related to the target <strong>−1</strong>
+        </label>
+      </div>`;
 
-    const dialogResult = await new Promise((resolve) => {
-      new Dialog({
-        title: `Cast Spell: ${spell.name}`,
-        content: `
-          <form class="bdnd-dialog">
-            <p class="bdnd-rule-note bdnd-spell-note">
-              Base Cost: <strong>${level}</strong> Pool Point(s) + <strong>${level}</strong> Stability Damage.
-            </p>
-            <div class="form-group">
-              <label>Spell Casting Rating: <strong>${ability.rating}</strong>
-                ${unskilledPenalty !== 0 ? '<span class="bdnd-unskilled">(Unskilled -2)</span>' : ''}
-              </label>
-            </div>
-            <div class="form-group">
-              <label>Target Number (TN):</label>
-              <input type="number" name="tn" value="${defaultTN}" min="2" max="15"/>
-            </div>
-            <div class="form-group">
-              <label>Select Approach:</label>
-              <select name="approachKey" style="width:100%;">
-                ${this._buildApproachOptions()}
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Extra Pool Spend (Max: ${maxExtraSpend}, on top of base cost):</label>
-              <input type="number" name="spend" value="0" min="0" max="${maxExtraSpend}" autofocus/>
-            </div>
-            <div class="form-group bdnd-exploit-group">
-              <label>
-                <input type="checkbox" name="exploit"/>
-                GM Granted Exploit Point? (+2, requires extra pool spend)
-              </label>
-            </div>
-          </form>
-        `,
-        buttons: {
-          roll: {
-            label: "Cast",
-            icon: "<i class='fas fa-magic'></i>",
-            callback: (html) => resolve({
-              tn: parseInt(html.find('[name="tn"]').val()) || 5,
-              approachKey: html.find('[name="approachKey"]').val(),
-              spend: parseInt(html.find('[name="spend"]').val()) || 0,
-              exploit: html.find('[name="exploit"]').is(':checked')
-            })
-          }
-        },
-        default: "roll",
-        close: () => resolve(null)
-      }).render(true);
-    });
+    // ── CASTING ABILITY SPELL — Test required ──────────────────────────────
+    if (isCasting) {
+      const defaultTN     = Number(spell.system.target_tn) || 8;
+      const maxExtraSpend = currentPool - level;
 
-    if (!dialogResult) return;
+      const dialogResult = await new Promise((resolve) => {
+        new Dialog({
+          title: `Cast Spell: ${spell.name}`,
+          content: `
+            <form class="bdnd-dialog">
+              <p class="bdnd-rule-note bdnd-spell-note">
+                <strong>Casting Ability Spell</strong> — drawn from ${poolLabel} pool (current: ${currentPool}).
+                Base cost: <strong>${level}</strong> pool point(s). Test usually TN 8.
+              </p>
+              <div class="form-group">
+                <label>Target Number (TN):</label>
+                <input type="number" name="tn" value="${defaultTN}" min="2" max="15"/>
+              </div>
+              <div class="form-group">
+                <label>Select Approach:</label>
+                <select name="approachKey" style="width:100%;">
+                  ${this._buildApproachOptions()}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Extra Pool Spend beyond base cost (max ${maxExtraSpend}, adds +1 per point):</label>
+                <input type="number" name="spend" value="0" min="0" max="${maxExtraSpend}" autofocus/>
+              </div>
+              <div class="form-group bdnd-exploit-group">
+                <label>
+                  <input type="checkbox" name="exploit"/>
+                  GM Granted Exploit Point? (+2, requires extra pool spend)
+                </label>
+              </div>
+              ${stabReductionFields}
+            </form>
+          `,
+          buttons: {
+            cast: {
+              label: "Cast",
+              icon: "<i class='fas fa-magic'></i>",
+              callback: (html) => resolve({
+                tn:             parseInt(html.find('[name="tn"]').val())            || 8,
+                approachKey:    html.find('[name="approachKey"]').val(),
+                spend:          parseInt(html.find('[name="spend"]').val())          || 0,
+                exploit:        html.find('[name="exploit"]').is(':checked'),
+                stabCeremony:   html.find('[name="stabCeremony"]').is(':checked'),
+                stabDriveSpend: parseInt(html.find('[name="stabDriveSpend"]').val()) || 0,
+                stabComponent:  html.find('[name="stabComponent"]').is(':checked'),
+                stabLoreSheet:  html.find('[name="stabLoreSheet"]').is(':checked')
+              })
+            }
+          },
+          default: "cast",
+          close: () => resolve(null)
+        }).render(true);
+      });
 
-    const selectedApproach = this.system.approaches[dialogResult.approachKey];
-    const approachMod = selectedApproach?.rating ?? 0;
-    const approachLabel = selectedApproach?.label ?? dialogResult.approachKey;
+      if (!dialogResult) return;
 
-    const activeConditions = this.items.filter(
-      i => i.type === "condition" && i.system.approach === dialogResult.approachKey
-    );
-    const conditionPenalty = activeConditions.length * -1;
+      const selectedApproach = this.system.approaches[dialogResult.approachKey];
+      const approachMod      = selectedApproach?.rating ?? 0;
+      const approachLabel    = selectedApproach?.label  ?? dialogResult.approachKey;
 
-    const extraSpend = Math.min(dialogResult.spend, maxExtraSpend);
-    const totalPoolDeduction = level + extraSpend;
-    let totalMod = approachMod + extraSpend + unskilledPenalty + conditionPenalty;
+      const activeConditions = this.items.filter(
+        i => i.type === 'condition' && i.system.approach === dialogResult.approachKey
+      );
+      const conditionPenalty = activeConditions.length * -1;
 
-    let exploitBonus = 0;
-    if (dialogResult.exploit) {
-      if (extraSpend > 0) {
-        exploitBonus = 2;
-        totalMod += 2;
+      const extraSpend    = Math.min(dialogResult.spend, maxExtraSpend);
+      const totalPoolCost = level + extraSpend;
+      let   totalMod      = approachMod + extraSpend + conditionPenalty;
+
+      let exploitBonus = 0;
+      if (dialogResult.exploit) {
+        if (extraSpend > 0) { exploitBonus = 2; totalMod += 2; }
+        else ui.notifications.warn("Exploit Point ignored — must spend extra pool points beyond the base cost.");
+      }
+
+      const roll = new Roll('2d6 + @mod', { mod: totalMod });
+      await roll.evaluate();
+      const hit = roll.total >= dialogResult.tn;
+
+      // RAW: Stability damage only on success — no damage if the spell fails
+      const driveSpend    = Math.min(2, dialogResult.stabDriveSpend);
+      const stabReduction = (dialogResult.stabCeremony  ? 2 : 0)
+                          + driveSpend
+                          + (dialogResult.stabComponent  ? 1 : 0)
+                          + (dialogResult.stabLoreSheet  ? 1 : 0);
+      const stabilityDmg  = hit ? Math.max(0, baseSta - stabReduction) : 0;
+
+      const newPool          = Math.max(0, currentPool - totalPoolCost);
+      const currentStability = this.system.stability.value ?? 0;
+      const stabilityMax     = this.system.stability.max   ?? 8;
+      const newStability     = Math.min(stabilityMax, currentStability + stabilityDmg);
+
+      const updates = {
+        'system.abilities.general.spell_casting.value': newPool,
+        'system.stability.value': newStability
+      };
+      if (driveSpend > 0) {
+        const apPath = `system.approaches.${dialogResult.approachKey}.value`;
+        updates[apPath] = Math.max(0, (selectedApproach?.value ?? 0) - driveSpend);
+      }
+      await this.update(updates);
+
+      let breakdownHTML = `
+        <div class="bdnd-breakdown-row bdnd-spell-cost">
+          <span>Pool Cost (${poolLabel}):</span>
+          <strong>${level} base + ${extraSpend} extra = ${totalPoolCost}</strong>
+        </div>
+        <div class="bdnd-breakdown-row"><span>Approach (${approachLabel}):</span><strong>+${approachMod}</strong></div>
+        ${extraSpend    ? `<div class="bdnd-breakdown-row bdnd-bonus"><span>Extra Pool Spend:</span><strong>+${extraSpend}</strong></div>` : ''}
+        ${exploitBonus  ? `<div class="bdnd-breakdown-row bdnd-bonus"><span>Exploit Point:</span><strong>+2</strong></div>` : ''}
+        ${conditionPenalty ? `<div class="bdnd-breakdown-row bdnd-malus"><span>Conditions:</span><strong>${conditionPenalty}</strong></div>` : ''}
+      `;
+
+      if (hit) {
+        breakdownHTML += `<div class="bdnd-breakdown-row bdnd-spell-cost">
+          <span>Stability Damage:</span>
+          <strong>${baseSta} − ${stabReduction} = ${stabilityDmg}</strong>
+        </div>`;
+        if (dialogResult.stabCeremony)  breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Ceremony:</span><strong>−2</strong></div>`;
+        if (driveSpend > 0)             breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Drive spend (${driveSpend} pool):</span><strong>−${driveSpend}</strong></div>`;
+        if (dialogResult.stabComponent) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Component (${level} Coin):</span><strong>−1</strong></div>`;
+        if (dialogResult.stabLoreSheet) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Lore Sheet spend:</span><strong>−1</strong></div>`;
       } else {
-        ui.notifications.warn("Exploit Point ignored: you must spend extra pool points beyond the base cost.");
+        breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>Stability Damage:</span><strong>0 (spell failed)</strong></div>`;
+      }
+
+      await this._postRollMessage({
+        title:        `<i class="fas fa-magic"></i> Cast: ${spell.name}`,
+        roll,
+        tn:           dialogResult.tn,
+        breakdownHTML,
+        successLabel: 'SPELL CAST SUCCESSFULLY',
+        failLabel:    'SPELL FAILED — no Stability damage',
+        colorAccent:  'purple'
+      });
+
+      if (hit && newStability >= stabilityMax) {
+        ui.notifications.warn(`${this.name} has reached maximum Stability Risk!`);
+      }
+
+    // ── CONCOCTION / RITUAL — always succeeds, no Test needed ─────────────
+    } else {
+      const dialogResult = await new Promise((resolve) => {
+        new Dialog({
+          title: `Perform Ritual: ${spell.name}`,
+          content: `
+            <form class="bdnd-dialog">
+              <p class="bdnd-rule-note bdnd-spell-note">
+                <strong>Concoction / Ritual</strong> — drawn from ${poolLabel} pool (current: ${currentPool}).
+                Base cost: <strong>${level}</strong> pool point(s).
+                <br><em>Rituals always succeed. The GM may call for a Test only to check for complications.</em>
+              </p>
+              ${stabReductionFields}
+            </form>
+          `,
+          buttons: {
+            cast: {
+              label: "Perform Ritual",
+              icon: "<i class='fas fa-khanda'></i>",
+              callback: (html) => resolve({
+                stabCeremony:   html.find('[name="stabCeremony"]').is(':checked'),
+                stabDriveSpend: parseInt(html.find('[name="stabDriveSpend"]').val()) || 0,
+                stabComponent:  html.find('[name="stabComponent"]').is(':checked'),
+                stabLoreSheet:  html.find('[name="stabLoreSheet"]').is(':checked')
+              })
+            }
+          },
+          default: "cast",
+          close: () => resolve(null)
+        }).render(true);
+      });
+
+      if (!dialogResult) return;
+
+      const driveSpend    = Math.min(2, dialogResult.stabDriveSpend);
+      const stabReduction = (dialogResult.stabCeremony  ? 2 : 0)
+                          + driveSpend
+                          + (dialogResult.stabComponent  ? 1 : 0)
+                          + (dialogResult.stabLoreSheet  ? 1 : 0);
+      const stabilityDmg  = Math.max(0, baseSta - stabReduction);
+
+      const newPool          = Math.max(0, currentPool - level);
+      const currentStability = this.system.stability.value ?? 0;
+      const stabilityMax     = this.system.stability.max   ?? 8;
+      const newStability     = Math.min(stabilityMax, currentStability + stabilityDmg);
+
+      await this.update({
+        'system.abilities.investigative.voodoo.value': newPool,
+        'system.stability.value': newStability
+      });
+
+      let reductionHTML = '';
+      if (dialogResult.stabCeremony)  reductionHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Ceremony:</span><strong>−2</strong></div>`;
+      if (driveSpend > 0)             reductionHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Drive spend (${driveSpend} from any pool):</span><strong>−${driveSpend}</strong></div>`;
+      if (dialogResult.stabComponent) reductionHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Component (${level} Coin):</span><strong>−1</strong></div>`;
+      if (dialogResult.stabLoreSheet) reductionHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Lore Sheet spend:</span><strong>−1</strong></div>`;
+
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor: this }),
+        content: `
+          <div class="bdnd-roll bdnd-roll-purple">
+            <h2><i class="fas fa-khanda"></i> ${spell.name}</h2>
+            <div class="roll-details">
+              <div class="bdnd-breakdown-row bdnd-spell-cost">
+                <span>Voodoo Pool Cost:</span><strong>${level} point(s)</strong>
+              </div>
+              <div class="bdnd-breakdown-row bdnd-spell-cost">
+                <span>Stability Damage:</span>
+                <strong>${baseSta} − ${stabReduction} = ${stabilityDmg}</strong>
+              </div>
+              ${reductionHTML}
+            </div>
+            <div class="dice-result">
+              <h3 class="bdnd-result-success">RITUAL PERFORMED SUCCESSFULLY</h3>
+              <div class="tn-label">Concoction rituals always succeed — the Loa have answered.</div>
+              ${driveSpend > 0 ? `<p class="bdnd-rule-note" style="margin-top:4px;">Remember to deduct ${driveSpend} point(s) from the relevant pool for the Drive spend.</p>` : ''}
+            </div>
+          </div>
+        `
+      });
+
+      if (newStability >= stabilityMax) {
+        ui.notifications.warn(`${this.name} has reached maximum Stability Risk!`);
       }
     }
-
-    const roll = new Roll(`2d6 + @mod`, { mod: totalMod });
-    await roll.evaluate();
-
-    // Deduct pool and apply stability damage (clamped to max)
-    const newPool = Math.max(0, currentPool - totalPoolDeduction);
-    const currentStability = this.system.stability.value ?? 0;
-    const stabilityMax = this.system.stability.max ?? 8;
-    const newStability = Math.min(stabilityMax, currentStability + level);
-
-    await this.update({
-      [`system.abilities.general.${abilityKey}.value`]: newPool,
-      "system.stability.value": newStability
-    });
-
-    if (currentStability + level >= stabilityMax) {
-      ui.notifications.warn(`${this.name} has reached maximum Stability Risk — Taken Out condition applies!`);
-    }
-
-    let breakdownHTML = `
-      <div class="bdnd-breakdown-row bdnd-spell-cost"><span>Base Cost:</span><strong>${level} Pool + ${level} Stability Dmg</strong></div>
-      <div class="bdnd-breakdown-row"><span>Approach (${approachLabel}):</span><strong>+${approachMod}</strong></div>
-      <div class="bdnd-breakdown-row"><span>Extra Pool Spent:</span><strong>${extraSpend}</strong></div>
-    `;
-    if (unskilledPenalty !== 0) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Unskilled:</span><strong>-2</strong></div>`;
-    if (exploitBonus !== 0) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>Exploit Point:</span><strong>+2</strong></div>`;
-    if (conditionPenalty !== 0) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Conditions:</span><strong>${conditionPenalty}</strong></div>`;
-
-    await this._postRollMessage({
-      title: `<i class="fas fa-magic"></i> Cast: ${spell.name}`,
-      roll, tn: dialogResult.tn, breakdownHTML,
-      successLabel: 'SPELL CAST SUCCESSFULLY',
-      failLabel: 'SPELL FAILED',
-      colorAccent: 'purple'
-    });
   }
 
   /* -------------------------------------------- */
@@ -1065,6 +1302,127 @@ export class BDNDActor extends Actor {
     });
 
     ui.notifications.info(`${label} raised to ${newRating}. Build Points remaining: ${bp - 1}`);
+  }
+
+  /* -------------------------------------------- */
+  /*  Fleeing (p.21)                               */
+  /* -------------------------------------------- */
+
+  /**
+   * Fleeing from an ongoing fight.
+   * Athletics test; TN = 6 + number of foes being fled from.
+   */
+  async rollFleeing() {
+    const dialogResult = await new Promise(resolve => {
+      new Dialog({
+        title: 'Flee!',
+        content: `
+          <form class="bdnd-dialog">
+            <p class="bdnd-rule-note">
+              <strong>Fleeing (p.21):</strong> Make an Athletics test.<br>
+              TN = 6 + the number of foes you are fleeing from.
+            </p>
+            <div class="form-group">
+              <label>Number of foes fleeing from:</label>
+              <input type="number" name="numFoes" value="1" min="1" max="10" autofocus/>
+            </div>
+          </form>
+        `,
+        buttons: {
+          roll: {
+            label: 'Roll to Flee',
+            icon:  "<i class='fas fa-person-running'></i>",
+            callback: html => resolve({ numFoes: parseInt(html.find('[name="numFoes"]').val()) || 1 })
+          }
+        },
+        default: 'roll',
+        close:   () => resolve(null)
+      }).render(true);
+    });
+    if (!dialogResult) return;
+
+    const { numFoes } = dialogResult;
+    await this.rollGeneralAbility('athletics', {
+      title: `Flee! (${numFoes} foe${numFoes > 1 ? 's' : ''})`,
+      tn:    6 + numFoes
+    });
+  }
+
+  /* -------------------------------------------- */
+  /*  Medicine (p.21)                              */
+  /* -------------------------------------------- */
+
+  /**
+   * Spend Medicine pool points to reduce a character's Health Risk Counter.
+   * Treating another: 1 pt → −3 Counter.
+   * Self-treating:    1 pt → −1 Counter.
+   * Target: the first targeted token (if any); otherwise self.
+   */
+  async useMedicine() {
+    const medicine  = this.system.abilities?.general?.medicine;
+    if (!medicine) return ui.notifications.error(`${this.name}: no Medicine ability found.`);
+    const available = medicine.value ?? 0;
+    if (available <= 0) return ui.notifications.warn(`${this.name} has no Medicine pool points remaining.`);
+
+    // Determine target: first targeted token that isn't the healer; else self
+    const targets  = [...(game.user?.targets ?? [])].filter(t => t.actor && t.actor.id !== this.id);
+    const target   = targets.length > 0 ? targets[0].actor : this;
+    const isSelf   = target.id === this.id;
+    const ratio    = isSelf ? 1 : 3;
+    const targetName = isSelf ? 'yourself' : target.name;
+
+    const dialogResult = await new Promise(resolve => {
+      new Dialog({
+        title: 'Use Medicine',
+        content: `
+          <form class="bdnd-dialog">
+            <p class="bdnd-rule-note">
+              <strong>Medicine (p.21):</strong><br>
+              ${isSelf
+                ? 'Self-treating — 1 point spent reduces your Health Risk Counter by <strong>1</strong>.'
+                : `Treating <strong>${target.name}</strong> — 1 point spent reduces their Health Risk Counter by <strong>3</strong>.`
+              }
+            </p>
+            <div class="form-group">
+              <label>Points to spend (pool: ${available}):</label>
+              <input type="number" name="spend" value="1" min="1" max="${available}" autofocus/>
+            </div>
+          </form>
+        `,
+        buttons: {
+          apply: {
+            label: 'Apply',
+            icon:  "<i class='fas fa-briefcase-medical'></i>",
+            callback: html => resolve({ spend: parseInt(html.find('[name="spend"]').val()) || 1 })
+          }
+        },
+        default: 'apply',
+        close:   () => resolve(null)
+      }).render(true);
+    });
+    if (!dialogResult) return;
+
+    const finalSpend = Math.min(dialogResult.spend, available);
+    const reduction  = finalSpend * ratio;
+    const currentHP  = target.system.health?.value ?? 0;
+    const newHP      = Math.max(0, currentHP - reduction);
+
+    await this.update({ 'system.abilities.general.medicine.value': Math.max(0, available - finalSpend) });
+    await target.update({ 'system.health.value': newHP });
+
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      content: `
+        <div class="bdnd-spend">
+          <h3><i class="fas fa-briefcase-medical"></i> Medicine</h3>
+          <div class="bdnd-breakdown-row"><span>Points Spent:</span><strong>${finalSpend}</strong></div>
+          <div class="bdnd-breakdown-row"><span>Treating:</span><strong>${targetName} (×${ratio})</strong></div>
+          <div class="bdnd-breakdown-row"><span>Health Risk Reduced:</span><strong>−${reduction}</strong></div>
+          <p class="bdnd-rule-note"><em>${target.name}: Health Risk Counter ${currentHP} → ${newHP}</em></p>
+        </div>
+      `
+    });
+    ui.notifications.info(`${target.name}: Health Risk Counter reduced by ${reduction} (${currentHP} → ${newHP}).`);
   }
 
 }

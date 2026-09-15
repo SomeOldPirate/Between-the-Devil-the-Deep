@@ -12,13 +12,33 @@
     </div>
   </header>
 
+  {{!-- ══ NPC TYPE TOGGLE ════════════════════════════════════════════ --}}
+  <div class="npc-type-row">
+    <span class="npc-type-label">
+      {{#if isRegularNPC}}
+        <i class="fas fa-skull-crossbones"></i> Regular NPC <span class="npc-type-note">(Taken Out at max counter — no Conditions)</span>
+      {{else}}
+        <i class="fas fa-user-tie"></i> Named NPC <span class="npc-type-note">(full Conditions track)</span>
+      {{/if}}
+    </span>
+    <button type="button" class="toggle-npc-type npc-type-btn"
+            title="Toggle between Named NPC (full Conditions) and Regular NPC (Taken Out at max counter)">
+      Switch to {{#if isRegularNPC}}Named{{else}}Regular{{/if}}
+    </button>
+  </div>
+
   {{!-- ══ APPROACHES ═══════════════════════════════════════════════════ --}}
   <div class="sp">
     <span class="sp-title">Approaches &amp; Methods</span>
     <div class="ledger-grid">
       {{#each approachList as |approach|}}
       <div class="ledger-col">
-        <span class="ledger-lbl">{{approach.label}}</span>
+        <div class="ledger-lbl-row">
+          <span class="ledger-lbl">{{approach.label}}</span>
+          {{#each approach.conditionBadges as |badge|}}
+            <span class="approach-cond-badge {{badge.type}}" title="{{badge.name}} — −1 to all {{../approach.label}} Tests">−1</span>
+          {{/each}}
+        </div>
         <div class="ledger-rtg-row">
           <span class="ledger-rtg-label">Rtg</span>
           <input type="number" name="system.approaches.{{approach.key}}.rating"
@@ -66,7 +86,8 @@
         <button type="button" class="roll-stability pc-counter-btn">Stability Test</button>
       </div>
     </div>
-    {{!-- Conditions inline --}}
+    {{!-- Conditions inline — Named NPCs only --}}
+    {{#unless isRegularNPC}}
     <div class="npc-conditions-inner">
       <span class="npc-cond-lbl">
         Conditions
@@ -91,6 +112,12 @@
       {{/if}}
       <a class="item-create add-condition-btn" data-type="condition"><i class="fas fa-plus"></i> Add Condition</a>
     </div>
+    {{else}}
+    <div class="npc-conditions-inner npc-regular-note">
+      <i class="fas fa-skull-crossbones"></i>
+      Regular NPC — no Conditions track. This NPC is <strong>Taken Out</strong> when their Health Risk Counter reaches maximum.
+    </div>
+    {{/unless}}
   </div>
 
   {{!-- ══ ABILITIES ══════════════════════════════════════════════════ --}}

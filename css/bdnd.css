@@ -1157,6 +1157,31 @@
   color: #5a0000;
 }
 
+/* ── Auto damage result (weapon attack hits) ─────────────────── */
+.bdnd-damage-result {
+  margin-top: 8px;
+  padding: 5px 8px;
+  background: rgba(100, 30, 10, 0.08);
+  border: 1px solid rgba(100, 30, 10, 0.3);
+  border-radius: 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.bdnd-damage-label {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.95em;
+  color: #5a1a00;
+}
+.bdnd-damage-result strong {
+  font-size: 1.25em;
+  color: #3e0000;
+}
+.bdnd-damage-result .tn-label {
+  font-size: 0.82em;
+  color: #7a5a3a;
+}
+
 /* Investigative spend card */
 .bdnd-spend h3 {
   font-family: 'IM Fell English SC', serif;
@@ -1470,4 +1495,316 @@
 #combat ol.combat-tracker li.combatant.bdnd-drag-over {
   border-top: 2px solid #c9a227 !important;
   margin-top: -2px;
+}
+
+/* ══ CONDITION BADGES ON APPROACH LABELS ════════════════════════ */
+
+/* Wrapper row that holds the approach label + any badges */
+.bdnd .ledger-lbl-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+/* Small pill badge: red/crimson for physical, blue for mental */
+.bdnd .approach-cond-badge {
+  display: inline-block;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 0.68em;
+  font-weight: 700;
+  font-family: 'Crimson Text', serif;
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+  cursor: default;
+}
+.bdnd .approach-cond-badge.physical {
+  background: #8b0000;
+  color: #fdf5e6;
+}
+.bdnd .approach-cond-badge.mental {
+  background: #1a3a6e;
+  color: #fdf5e6;
+}
+
+/* ══ FLEE BUTTON IN TOOLBAR ═════════════════════════════════════ */
+
+.bdnd .tab-toolbar .roll-flee {
+  color: #5a3d2b;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bdnd .tab-toolbar .roll-flee:hover {
+  color: #8b0000;
+  text-shadow: 0 0 6px rgba(139,0,0,0.4);
+}
+
+/* ══ NPC TYPE TOGGLE ════════════════════════════════════════════ */
+
+.bdnd .npc-type-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+  background: rgba(90,61,43,0.08);
+  border: 1px dashed #8c6d53;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+.bdnd .npc-type-label {
+  color: #3e2b1d;
+}
+.bdnd .npc-type-note {
+  color: #7a5500;
+  font-style: italic;
+  margin-left: 4px;
+}
+.bdnd .npc-type-btn {
+  padding: 2px 10px;
+  background: #5a3d2b;
+  color: #fdf5e6;
+  border: none;
+  border-radius: 3px;
+  font-family: 'Crimson Text', serif;
+  font-size: 0.88em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.bdnd .npc-type-btn:hover {
+  background: #8b0000;
+}
+
+/* Regular NPC — no-conditions notice */
+.bdnd .npc-regular-note {
+  padding: 5px 8px;
+  font-style: italic;
+  color: #7a5500;
+  font-size: 0.88em;
+}
+
+/* ══ COUNTER BOARD SHEET ════════════════════════════════════════ */
+
+.bdnd.counter-board .bdnd-counter-board {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 4px;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.bdnd .counter-board-header {
+  padding-bottom: 8px;
+  border-bottom: 2px solid #5a3d2b;
+}
+.bdnd .counter-board-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.bdnd .counter-board-icon {
+  font-size: 1.3em;
+  color: #5a3d2b;
+}
+.bdnd .counter-board-name-input {
+  flex: 1;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.3em;
+  border-bottom: 2px solid #5a3d2b !important;
+}
+.bdnd .counter-board-add {
+  padding: 3px 12px;
+  background: #5a3d2b;
+  color: #fdf5e6;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Crimson Text', serif;
+  font-size: 0.92em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.bdnd .counter-board-add:hover { background: #8b0000; }
+.bdnd .counter-board-rule {
+  font-size: 0.82em;
+  color: #7a5500;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── Counter List ───────────────────────────────────────────── */
+.bdnd .counter-board-body {
+  flex: 1;
+  overflow-y: auto;
+}
+.bdnd .counter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Individual Counter Card ────────────────────────────────── */
+.bdnd .ctr-card {
+  border: 1px solid #8c6d53;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: rgba(249,244,232,0.85);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.bdnd .ctr-card.safe    { border-color: #4a7c59; }
+.bdnd .ctr-card.warning { border-color: #b57c1a; }
+.bdnd .ctr-card.danger  { border-color: #8b0000; box-shadow: 0 0 6px rgba(139,0,0,0.3); }
+.bdnd .ctr-card.ctr-at-max { background: rgba(139,0,0,0.06); }
+
+/* Card header row: name | type | value | delete */
+.bdnd .ctr-header-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.bdnd .ctr-name-input {
+  flex: 1;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.05em;
+  font-weight: 600;
+  border-bottom: 1px dashed #8c6d53 !important;
+}
+.bdnd .ctr-type-select {
+  font-size: 0.82em;
+  padding: 1px 4px;
+  border: 1px solid #8c6d53 !important;
+  border-radius: 3px;
+  width: auto;
+}
+.bdnd .ctr-value-display {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  font-size: 1.05em;
+  white-space: nowrap;
+}
+.bdnd .ctr-current-safe    { color: #2d5a3d; }
+.bdnd .ctr-current-warning { color: #8b5000; }
+.bdnd .ctr-current-danger  { color: #8b0000; }
+.bdnd .ctr-sep { color: #8c6d53; margin: 0 2px; }
+.bdnd .ctr-max-input {
+  width: 38px;
+  text-align: center;
+  font-size: 0.9em;
+}
+.bdnd .ctr-delete {
+  color: #8c6d53;
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: color 0.15s;
+}
+.bdnd .ctr-delete:hover { color: #8b0000; }
+
+/* Progress bar */
+.bdnd .ctr-bar-wrap {
+  position: relative;
+  height: 10px;
+  background: rgba(90,61,43,0.12);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.bdnd .ctr-bar {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+.bdnd .ctr-bar-safe    { background: linear-gradient(90deg,#4a7c59,#6aaf7f); }
+.bdnd .ctr-bar-warning { background: linear-gradient(90deg,#b57c1a,#e0a020); }
+.bdnd .ctr-bar-danger  { background: linear-gradient(90deg,#8b0000,#cc2200); }
+.bdnd .ctr-max-label {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.6em;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+
+/* Action buttons row */
+.bdnd .ctr-button-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.bdnd .ctr-btn {
+  flex: 1;
+  padding: 2px 6px;
+  font-family: 'Crimson Text', serif;
+  font-size: 0.82em;
+  cursor: pointer;
+  border-radius: 3px;
+  border: 1px solid #8c6d53;
+  background: rgba(90,61,43,0.07);
+  color: #3e2b1d;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  text-align: center;
+}
+.bdnd .ctr-btn:hover              { background: rgba(90,61,43,0.18); }
+.bdnd .ctr-btn.ctr-btn-risk:hover { background: rgba(139,0,0,0.15); border-color: #8b0000; }
+.bdnd .ctr-btn.ctr-btn-reduce:hover { background: rgba(74,124,89,0.2); border-color: #4a7c59; }
+
+/* Empty state */
+.bdnd .ctr-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 0;
+  color: #8c6d53;
+}
+.bdnd .ctr-empty-icon {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  opacity: 0.45;
+}
+
+/* Chat type badges on counter roll messages */
+.bdnd .ctr-type-badge {
+  font-size: 0.7em;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+.bdnd .ctr-type-risk     { background: #8b0000; color: #fdf5e6; }
+.bdnd .ctr-type-progress { background: #2d5a3d; color: #fdf5e6; }
+
+/* ── GM Notes ───────────────────────────────────────────────── */
+.bdnd .counter-board-notes {
+  border-top: 1px solid #8c6d53;
+  padding-top: 8px;
+}
+.bdnd .counter-board-notes-label {
+  display: block;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 0.88em;
+  color: #5a3d2b;
+  margin-bottom: 4px;
+}
+.bdnd .counter-board-notes textarea {
+  width: 100%;
+  min-height: 60px;
+  background: rgba(249,244,232,0.7);
+  border: 1px dashed #8c6d53;
+  border-radius: 4px;
+  padding: 5px;
+  font-family: 'Crimson Text', serif;
+  font-size: 0.9em;
+  color: #3e2b1d;
+  resize: vertical;
 }

@@ -3,7 +3,8 @@
     "types": [
       "character",
       "ship",
-      "npc"
+      "npc",
+      "counter_board"
     ],
     "character": {
       "biography": "",
@@ -550,6 +551,10 @@
         }
       }
     },
+    "counter_board": {
+      "counters_json": "[]",
+      "notes": ""
+    },
     "ship": {
       "captain": "",
       "class": "",
@@ -637,7 +642,8 @@
     },
     "spell": {
       "level": 1,
-      "target_tn": 5,
+      "spell_type": "casting",
+      "target_tn": 8,
       "description": ""
     },
     "drive": {
