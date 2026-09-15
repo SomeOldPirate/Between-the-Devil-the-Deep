@@ -16,8 +16,17 @@ export default class BDNDCharacterSheet extends BDNDCreatureSheet {
     id: "bdnd-character-{id}",
     classes: ["captain-sheet"],
     position: { width: 660, height: 820 },
-    window: { icon: "fa-solid fa-hat-cowboy" }
+    window: { icon: "fa-solid fa-skull-crossbones" }
   };
+
+  /**
+   * Not every PC is a "Captain" — show just the actor's name rather than
+   * DocumentSheetV2's default "<Type Label>: <Name>" title.
+   * @inheritdoc
+   */
+  get title() {
+    return this.actor.name;
+  }
 
   /** @inheritdoc */
   static PARTS = {
