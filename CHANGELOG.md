@@ -1,5 +1,11 @@
 # BD&D System Changelog
 
+## [2.0.1] — 2026-09-16
+
+### Fixed
+
+- Item sheet portraits were missing their sizing class, so images rendered at full natural size instead of a proper thumbnail. Added an `item-portrait` style matching the actor sheet portraits.
+
 ## [2.0.0] — 2026-09-15
 
 ### Changed — Rebuilt for Foundry V14

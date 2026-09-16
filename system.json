@@ -2,7 +2,7 @@
   "id": "bdnd",
   "title": "Between the Devil & the Deep",
   "description": "The SHAMUS/GUMSHOE system for the Golden Age of Piracy. Built for Foundry V14.",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "compatibility": {
     "minimum": "14",
     "verified": "14.367"
