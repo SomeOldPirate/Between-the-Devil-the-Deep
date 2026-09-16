@@ -596,6 +596,20 @@
   border-bottom-color: #b8860b !important;
 }
 
+/* ── Item Sheet ──────────────────────────────────────────────── */
+
+.bdnd .item-portrait {
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  object-fit: cover;
+  border: 3px solid #5a3d2b;
+  border-radius: 4px;
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.4);
+  background: #2c1e16;
+  flex-shrink: 0;
+}
+
 /* ── Item Lists ──────────────────────────────────────────────── */
 
 .bdnd .item-list {
