@@ -6,7 +6,7 @@
  * @module bdnd/apps/creature-sheet-base
  */
 
-import { SYSTEM_ID } from "../config.mjs";
+import BDND from "../config.mjs";
 
 const { DialogV2, HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -16,6 +16,19 @@ const { ActorSheetV2 } = foundry.applications.sheets;
  */
 export default class BDNDCreatureSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
+  /**
+   * "Show all skills" is a viewing preference, not actor data, so it lives
+   * here (per actor, for this browser session) rather than in a flag.
+   * @type {Set<string>}
+   */
+  static #showAll = new Set();
+
+  /** Advance mode shows the Spend-a-Build-Point arrows. */
+  #advancing = false;
+
+  /** Which counter's base max is being edited ("health" | "stability" | null). */
+  #editingBase = null;
+
   /** @inheritdoc */
   static DEFAULT_OPTIONS = {
     classes: ["bdnd", "sheet", "actor"],
@@ -24,7 +37,6 @@ export default class BDNDCreatureSheet extends HandlebarsApplicationMixin(ActorS
     actions: {
       rollGeneral: BDNDCreatureSheet.#onRollGeneral,
       spendInvestigative: BDNDCreatureSheet.#onSpendInvestigative,
-      spendReassurance: BDNDCreatureSheet.#onSpendReassurance,
       rollClutch: BDNDCreatureSheet.#onRollClutch,
       rollStability: BDNDCreatureSheet.#onRollStability,
       rollFlee: BDNDCreatureSheet.#onRollFlee,
@@ -35,6 +47,9 @@ export default class BDNDCreatureSheet extends HandlebarsApplicationMixin(ActorS
       rollDamage: BDNDCreatureSheet.#onRollDamage,
       castSpell: BDNDCreatureSheet.#onCastSpell,
       toggleAbilities: BDNDCreatureSheet.#onToggleAbilities,
+      toggleAdvance: BDNDCreatureSheet.#onToggleAdvance,
+      editBase: BDNDCreatureSheet.#onEditBase,
+      setPool: BDNDCreatureSheet.#onSetPool,
       raiseRating: BDNDCreatureSheet.#onRaiseRating,
       refreshEvent: BDNDCreatureSheet.#onRefreshEvent,
       itemCreate: BDNDCreatureSheet.#onItemCreate,
@@ -63,9 +78,11 @@ export default class BDNDCreatureSheet extends HandlebarsApplicationMixin(ActorS
     context.editable = this.isEditable;
     context.fields = system.schema.fields;
 
-    // Persist show-all toggle in actor flags so it survives close/reopen
-    const showAllAbilities = actor.getFlag(SYSTEM_ID, "showAllAbilities") ?? false;
+    const showAllAbilities = BDNDCreatureSheet.#showAll.has(actor.uuid);
     context.showAllAbilities = showAllAbilities;
+    context.bp = system.build_points?.value ?? 0;
+    context.advancing = this.#advancing && context.bp > 0;
+    context.editingBase = this.#editingBase;
 
     // Precompute pip arrays and attach any Conditions on each Approach
     // (Conditions already apply a -1 penalty to rolls; this makes it visible on the sheet)
@@ -74,15 +91,14 @@ export default class BDNDCreatureSheet extends HandlebarsApplicationMixin(ActorS
       const rating = approach.rating ?? 0;
       const pool   = approach.value  ?? 0;
       const pips   = [];
-      for (let i = 0; i < rating; i++) pips.push({ full: i < pool });
+      for (let i = 0; i < rating; i++) pips.push({ full: i < pool, index: i });
       const conditionBadges = allConditions
         .filter(c => c.system.approach === key)
         .map(c => ({ name: c.name, type: c.system.conditionType }));
       return { key, label: approach.label, rating, pool, pips, conditionBadges };
     });
 
-    const formatAbilityName = key =>
-      key.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    const formatAbilityName = BDND.abilityLabel;
 
     // General abilities
     const generalList = [];
@@ -119,9 +135,7 @@ export default class BDNDCreatureSheet extends HandlebarsApplicationMixin(ActorS
         name: i.name,
         system: {
           ...i.system,
-          abilityLabel: i.system.ability
-            ? i.system.ability.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
-            : "—"
+          abilityLabel: BDND.abilityLabel(i.system.ability)
         }
       }))
       .sort((a, b) => a.system.abilityLabel.localeCompare(b.system.abilityLabel));
@@ -144,6 +158,26 @@ export default class BDNDCreatureSheet extends HandlebarsApplicationMixin(ActorS
     context.stabilityPct = Math.min(100, Math.round(((system.stability?.value || 0) / sMax) * 100));
 
     return context;
+  }
+
+  /** Close the base-max editor once a new value is entered. */
+  _onChangeForm(formConfig, event) {
+    if (event.target?.classList?.contains("counter-base-input")) this.#editingBase = null;
+    return super._onChangeForm(formConfig, event);
+  }
+
+  /** Focus the base-max input when it opens; close it again on blur. */
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    const input = this.element.querySelector(".counter-base-input");
+    if (!input) return;
+    input.focus();
+    input.select();
+    input.addEventListener("blur", () => {
+      this.#editingBase = null;
+      // Let the change (if any) submit first
+      setTimeout(() => this.render(), 50);
+    }, { once: true });
   }
 
   /* -------------------------------------------- */
@@ -199,10 +233,6 @@ export default class BDNDCreatureSheet extends HandlebarsApplicationMixin(ActorS
     this.actor.spendInvestigativeAbility(key);
   }
 
-  static #onSpendReassurance() {
-    this.actor.spendReassurance();
-  }
-
   static async #onRollWeaponAttack(event, target) {
     const li = target.closest("[data-item-id]");
     const item = this.actor.items.get(li?.dataset.itemId);
@@ -213,14 +243,14 @@ export default class BDNDCreatureSheet extends HandlebarsApplicationMixin(ActorS
       return ui.notifications.warn(`${item.name} is out of ammo!`);
     }
 
-    // Open the roll dialog first; only deduct ammo if the player commits
-    await this.actor.rollGeneralAbility(item.system.ability || "weapons", {
+    // Open the roll dialog first; only deduct ammo if the player actually rolls
+    // (rollGeneralAbility returns the Roll, or null if the dialog was cancelled)
+    const roll = await this.actor.rollGeneralAbility(item.system.ability || "weapons", {
       title: `Attack: ${item.name}`,
       weapon: item
     });
+    if (!roll) return;
 
-    // If we get here the dialog was confirmed (rollGeneralAbility resolves after
-    // deducting pool), so now safely deduct ammo
     if (item.system.ammo?.max > 0 && item.system.ammo.value > 0) {
       await item.update({ "system.ammo.value": item.system.ammo.value - 1 });
     }
@@ -261,10 +291,32 @@ export default class BDNDCreatureSheet extends HandlebarsApplicationMixin(ActorS
   /*  Actions — editable only                     */
   /* -------------------------------------------- */
 
-  static async #onToggleAbilities() {
+  static #onToggleAbilities() {
+    const set = BDNDCreatureSheet.#showAll;
+    const uuid = this.actor.uuid;
+    if (set.has(uuid)) set.delete(uuid); else set.add(uuid);
+    this.render();
+  }
+
+  static #onToggleAdvance() {
+    this.#advancing = !this.#advancing;
+    this.render();
+  }
+
+  static #onEditBase(event, target) {
     if (!this.isEditable) return;
-    const current = this.actor.getFlag(SYSTEM_ID, "showAllAbilities") ?? false;
-    await this.actor.setFlag(SYSTEM_ID, "showAllAbilities", !current);
+    this.#editingBase = target.dataset.counter;
+    this.render();
+  }
+
+  /** Click a pip to set the pool to that many points; click the last full pip to empty it. */
+  static async #onSetPool(event, target) {
+    if (!this.isEditable) return;
+    const { key } = target.dataset;
+    const index = Number(target.dataset.index);
+    const current = this.actor.system.approaches[key]?.value ?? 0;
+    const value = current === index + 1 ? index : index + 1;
+    await this.actor.update({ [`system.approaches.${key}.value`]: value });
   }
 
   static #onRaiseRating(event, target) {
@@ -337,14 +389,6 @@ export default class BDNDCreatureSheet extends HandlebarsApplicationMixin(ActorS
 
   static async #onLoreRefreshAll() {
     if (!this.isEditable) return;
-    // Untap all lore sheets and restore Investigative ability pools to their ratings
-    const confirmed = await DialogV2.confirm({
-      window: { title: "Untap All Lore Sheets?" },
-      content: `<p>This will untap all Lore Sheets. Use the main <strong>Refresh</strong> button (General tab) to also restore ability pools.</p>`,
-      rejectClose: false
-    });
-    if (!confirmed) return;
-
     const loreUpdates = this.actor.items
       .filter(i => i.type === "lore_sheet" && i.system.tapped)
       .map(i => ({ _id: i.id, "system.tapped": false }));

@@ -30,7 +30,6 @@ export class WeaponData extends BDNDTypeDataModel {
       bonus: int({ initial: 0 }),
       range: str("Close"),
       notes: str(),
-      equipped: bool(true),
       ability: str("weapons"),
       ammo: new fields.SchemaField({
         value: int({ initial: 0 }),

@@ -42,14 +42,16 @@
         <input type="number" name="system.approaches.{{approach.key}}.rating"
                value="{{approach.rating}}" class="ledger-rtg-input"/>
       </div>
-      <div class="approach-pips">
+      <div class="approach-pips" title="Pool: {{approach.pool}} / {{approach.rating}} — click a pip to set the pool">
         {{#each approach.pips as |pip|}}
-          <span class="pip {{#if pip.full}}pip-full{{else}}pip-empty{{/if}}"></span>
+          <a class="pip {{#if pip.full}}pip-full{{else}}pip-empty{{/if}}" data-action="setPool"
+             data-key="{{approach.key}}" data-index="{{pip.index}}"></a>
         {{/each}}
-        {{#if (eq approach.rating 0)}}<span class="approach-unrated">—</span>{{/if}}
+        {{#if (eq approach.rating 0)}}
+          <span class="approach-unrated">—</span>
+        {{/if}}
       </div>
-      <input type="number" name="system.approaches.{{approach.key}}.value"
-             value="{{approach.pool}}" class="approach-pool-input ledger-pool"/>
+      {{#if approach.rating}}<span class="ledger-pool-count">{{approach.pool}} / {{approach.rating}}</span>{{/if}}
     </div>
     {{/each}}
   </div>
@@ -65,7 +67,12 @@
         <span class="pc-counter-nums">
           <input type="number" name="system.health.value" value="{{system.health.value}}" class="counter-val-input"/>
           <span class="counter-sep">/</span>
-          <input type="number" name="system.health.base"  value="{{system.health.base}}"  class="counter-base-input" title="Edit base max"/>
+          {{#if (eq editingBase "health")}}
+            <input type="number" name="system.health.base" value="{{system.health.base}}" class="counter-base-input" title="Base max (before Cherry bonuses)"/>
+          {{else}}
+            <a class="counter-max-display" data-action="editBase" data-counter="health"
+               title="Max {{system.health.max}} = base {{system.health.base}} + Cherry bonuses. Click to edit the base.">{{system.health.max}}</a>
+          {{/if}}
         </span>
       </div>
       <div class="pc-counter-bar-wrap"><div class="pc-counter-bar health-bar" style="width:{{healthPct}}%;max-width:100%"></div></div>
@@ -77,7 +84,12 @@
         <span class="pc-counter-nums">
           <input type="number" name="system.stability.value" value="{{system.stability.value}}" class="counter-val-input"/>
           <span class="counter-sep">/</span>
-          <input type="number" name="system.stability.base"  value="{{system.stability.base}}"  class="counter-base-input" title="Edit base max"/>
+          {{#if (eq editingBase "stability")}}
+            <input type="number" name="system.stability.base" value="{{system.stability.base}}" class="counter-base-input" title="Base max (before Cherry bonuses)"/>
+          {{else}}
+            <a class="counter-max-display" data-action="editBase" data-counter="stability"
+               title="Max {{system.stability.max}} = base {{system.stability.base}} + Cherry bonuses. Click to edit the base.">{{system.stability.max}}</a>
+          {{/if}}
         </span>
       </div>
       <div class="pc-counter-bar-wrap"><div class="pc-counter-bar stab-bar" style="width:{{stabilityPct}}%;max-width:100%"></div></div>
@@ -177,10 +189,11 @@
     <li class="item flexrow" data-item-id="{{item._id}}">
       <h4 class="item-name npc-item-name">
         <a data-action="rollWeaponAttack">{{item.name}}</a>
-        <span class="weapon-meta">+{{item.system.bonus}} dmg · {{item.system.range}}</span>
+        <span class="weapon-meta">+{{item.system.bonus}} dmg · {{item.system.range}}{{#if item.system.ammo.max}} · {{item.system.ammo.value}}/{{item.system.ammo.max}} ammo{{/if}}{{#if item.system.notes}} · {{item.system.notes}}{{/if}}</span>
       </h4>
       <div class="item-controls">
         <a data-action="rollDamage" title="Roll Damage"><i class="fas fa-dice-d6"></i></a>
+        {{#if item.system.ammo.max}}<a data-action="reloadWeapon" title="Reload"><i class="fas fa-redo"></i></a>{{/if}}
         <a data-action="itemEdit" title="Edit"><i class="fas fa-edit"></i></a>
         <a data-action="itemDelete" title="Delete"><i class="fas fa-trash"></i></a>
       </div>

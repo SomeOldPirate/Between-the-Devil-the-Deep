@@ -3,8 +3,9 @@
  * @module bdnd
  */
 
-import { SYSTEM_ID } from "./config.mjs";
+import BDND, { SYSTEM_ID } from "./config.mjs";
 import { BDNDActor } from "./actor.mjs";
+import { registerSocket } from "./socket.mjs";
 
 import { CharacterData, NpcData } from "./data/actor-creature.mjs";
 import ShipData from "./data/actor-ship.mjs";
@@ -81,7 +82,7 @@ class BDNDCombat extends Combat {
           i => i.type === 'cherry' && i.system.ability === 'sense_trouble'
         );
         const stRating = hasDangersense
-          ? (actor.system.abilities?.investigative?.sense_trouble?.rating ?? 0)
+          ? (actor.system.abilities?.general?.sense_trouble?.rating ?? 0)
           : null;
         const dsTag = stRating
           ? `<span class="bdnd-bonus" title="May use Sense Trouble for initiative"> ★ ST:${stRating}</span>`
@@ -163,6 +164,7 @@ Hooks.once("init", async function() {
   // "Roll Initiative" posts a reference card; the GM drags combatants to order.
   // Coin flip (Tails wins) is available via the 🪙 button in the tracker.
   CONFIG.Combat.initiative = { formula: "1dc", decimals: 0 };
+  CONFIG.BDND = BDND;
 
   const { DocumentSheetConfig } = foundry.applications.apps;
   DocumentSheetConfig.registerSheet(Actor, SYSTEM_ID, BDNDCharacterSheet, {
@@ -183,10 +185,7 @@ Hooks.once("init", async function() {
 
   // ── Handlebars Helpers ─────────────────────────────────────────────────────
 
-  Handlebars.registerHelper('gt',  (a, b) => a > b);
   Handlebars.registerHelper('gte', (a, b) => a >= b);
-  Handlebars.registerHelper('lt',  (a, b) => a < b);
-  Handlebars.registerHelper('or',  (a, b) => a || b);
   Handlebars.registerHelper('eq',  (a, b) => a === b);
 
   // Marks an <option> as selected when its value matches the bound field —
@@ -197,23 +196,6 @@ Hooks.once("init", async function() {
   Handlebars.registerHelper('stripHTML', (html) => {
     if (!html) return "";
     return new DOMParser().parseFromString(html, 'text/html').body.textContent || "";
-  });
-
-  // Repeat N times — passes {index, total} as context so templates can reliably compare
-  Handlebars.registerHelper('times', (n, block) => {
-    let result = '';
-    for (let i = 1; i <= n; i++) result += block.fn({ index: i, total: n });
-    return result;
-  });
-
-  // Register settings in init so they exist before ready fires
-  game.settings.register("bdnd", "systemMigrationVersion", {
-    name: "System Migration Version",
-    hint: "Tracks the last migrated version. Do not edit manually.",
-    scope: "world",
-    config: false,
-    type: String,
-    default: "0.0.0"
   });
 });
 
@@ -375,48 +357,42 @@ Hooks.on('renderCombatTracker', (app, html) => {
     leftControls.append(btn);
   }
 
+  // ── Per-combatant "roll" buttons ──────────────────────────────────────────
+  // There's no individual initiative roll in SHAMUS — each one would just
+  // repost the whole reference card — so hide them. "Roll All" stays.
+  html.querySelectorAll('.combatant-control.roll[data-action="rollInitiative"]').forEach(b => b.remove());
+
   // ── Drag-to-reorder ───────────────────────────────────────────────────────
   _enableCombatTrackerDrag(html);
 });
 
-/* -------------------------------------------- */
-/*  Version Migration Hook                       */
-/* -------------------------------------------- */
-
-Hooks.once("ready", () => {
-  const systemVersion = game.system.version;
-  const worldVersion  = game.settings.get("bdnd", "systemMigrationVersion") ?? "0.0.0";
-
-  if (foundry.utils.isNewerVersion(systemVersion, worldVersion)) {
-    console.log(`BD&D | Migrating world from v${worldVersion} to v${systemVersion}`);
-    // Future migration logic goes here.
-    game.settings.set("bdnd", "systemMigrationVersion", systemVersion);
-  }
-});
+Hooks.once("ready", () => registerSocket());
 
 /* -------------------------------------------- */
 /*  Auto Taken Out → Clutch Test prompt          */
 /* -------------------------------------------- */
 
-// When a character's or NPC's Health Risk Counter reaches its maximum the GM
-// sees a chat card and is offered a button to open the Clutch Test dialog on
-// behalf of the affected actor. This mirrors the SHAMUS "Taken Out" rule:
-// reaching max Health forces a Clutch Test (p.20).
-Hooks.on('updateActor', async (actor, changes, _options, _userId) => {
-  // Only react to Health counter changes on characters and named NPCs
+// When a character's or NPC's Health Risk Counter reaches its maximum, post a
+// Taken Out card (with a Clutch Test button for Named NPCs and PCs). Only the
+// client that made the change reacts, so the card is posted once and only a
+// user who can update the actor touches its flag.
+Hooks.on('updateActor', async (actor, changes, _options, userId) => {
+  if (userId !== game.user.id) return;
   if (!['character', 'npc'].includes(actor.type)) return;
   const newVal = foundry.utils.getProperty(changes, 'system.health.value');
-  if (newVal === undefined) return;                    // health didn't change
+  if (newVal === undefined) return;
 
-  const max = actor.system.health?.max ?? actor.system.health?.base ?? 8;
-  if (newVal < max) return;                            // not at max yet
+  const max     = actor.system.health?.max ?? actor.system.health?.base ?? 8;
+  const flagged = actor.getFlag('bdnd', 'healthMaxAlerted') ?? false;
 
-  // Check flag so we only alert once per "hit-max" event, not on every save
-  const alreadyFlagged = actor.getFlag('bdnd', 'healthMaxAlerted') ?? false;
-  if (alreadyFlagged) return;
+  // Below max: clear the alert flag (if set) so the next hit-max alerts again
+  if (newVal < max) {
+    if (flagged) await actor.unsetFlag('bdnd', 'healthMaxAlerted');
+    return;
+  }
+  if (flagged) return;
   await actor.setFlag('bdnd', 'healthMaxAlerted', true);
 
-  // Post Taken Out alert to chat
   const isRegular = (actor.getFlag('bdnd', 'npcType') ?? 'named') === 'regular';
   const outcomeText = isRegular
     ? 'This is a <strong>Regular NPC</strong> — they are immediately <strong>Taken Out</strong>.'
@@ -445,19 +421,9 @@ Hooks.on('updateActor', async (actor, changes, _options, _userId) => {
 // Handle the Clutch Test button inside chat — delegate to the actor method
 Hooks.on('renderChatMessageHTML', (message, html) => {
   html.querySelector('.bdnd-clutch-trigger')?.addEventListener('click', ev => {
-    const actorId = ev.currentTarget.dataset.actorId;
-    const actor   = game.actors?.get(actorId);
-    actor?.rollClutchTest();
+    const actor = game.actors?.get(ev.currentTarget.dataset.actorId);
+    if (!actor) return;
+    if (!actor.isOwner) return ui.notifications.warn(`Only ${actor.name}'s owner or the GM can roll this Clutch Test.`);
+    actor.rollClutchTest();
   });
-});
-
-// Clear the healthMaxAlerted flag when health drops below max (recovery)
-Hooks.on('updateActor', async (actor, changes) => {
-  if (!['character', 'npc'].includes(actor.type)) return;
-  const newVal = foundry.utils.getProperty(changes, 'system.health.value');
-  if (newVal === undefined) return;
-  const max = actor.system.health?.max ?? actor.system.health?.base ?? 8;
-  if (newVal < max) {
-    await actor.unsetFlag('bdnd', 'healthMaxAlerted');
-  }
 });

@@ -1,6 +1,9 @@
 const { DialogV2 } = foundry.applications.api;
 const { FormDataExtended } = foundry.applications.ux;
 
+import BDND from "./config.mjs";
+import { updateActorAnywhere } from "./socket.mjs";
+
 export class BDNDActor extends Actor {
 
   /** @override */
@@ -48,8 +51,7 @@ export class BDNDActor extends Actor {
 
   /** Format an ability key into a human-readable label. */
   static formatKey(key) {
-    return key.replaceAll('_', ' ').split(' ')
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    return BDND.abilityLabel(key);
   }
 
   /** Build an HTML string of approach <option> elements. */
@@ -61,6 +63,40 @@ export class BDNDActor extends Actor {
       const extra = showPool ? ` (Pool: ${data.value ?? 0})` : ` (+${data.rating ?? 0})`;
       return `<option value="${key}">${label}${extra}</option>`;
     }).join('');
+  }
+
+  /** Build <option>s for every Approach and Ability pool with points in it. */
+  _buildPoolOptions() {
+    const opts = [];
+    for (const [key, data] of Object.entries(this.system.approaches ?? {})) {
+      if ((data.value ?? 0) > 0) opts.push(`<option value="approaches.${key}">${data.label || BDNDActor.formatKey(key)} (Pool: ${data.value})</option>`);
+    }
+    for (const group of ['general', 'investigative']) {
+      for (const [key, data] of Object.entries(this.system.abilities?.[group] ?? {})) {
+        if ((data.value ?? 0) > 0) opts.push(`<option value="abilities.${group}.${key}">${BDNDActor.formatKey(key)} (Pool: ${data.value})</option>`);
+      }
+    }
+    return opts.join('');
+  }
+
+  /**
+   * Work out a Drive spend (max 2) from the chosen pool, taking into account
+   * updates already queued (e.g. the spell's own pool cost from the same pool).
+   * Writes the new pool value into `updates` and returns the points spent.
+   */
+  _applyDriveSpend(poolKey, requested, updates) {
+    requested = Math.min(2, Math.max(0, requested || 0));
+    if (!poolKey || requested === 0) return { spend: 0, label: '' };
+    const path    = `system.${poolKey}.value`;
+    const current = path in updates ? updates[path] : (foundry.utils.getProperty(this, path) ?? 0);
+    const spend   = Math.min(requested, current);
+    const key     = poolKey.split('.').pop();
+    const label   = poolKey.startsWith('approaches.')
+      ? (this.system.approaches[key]?.label ?? BDNDActor.formatKey(key))
+      : BDNDActor.formatKey(key);
+    if (spend < requested) ui.notifications.warn(`Only ${current} points left in ${label} for the Drive spend. Spending ${spend}.`);
+    if (spend > 0) updates[path] = current - spend;
+    return { spend, label };
   }
 
   /** Post a roll result to chat, with automatic Greater Success and Complication detection. */
@@ -150,115 +186,136 @@ export class BDNDActor extends Actor {
   /*  General Ability Test                         */
   /* -------------------------------------------- */
 
+  /**
+   * A General Ability test (also used for attacks, Contests and Fleeing).
+   * @param {string|null} abilityKey  null = choose the ability in the dialog (Contest from the toolbar)
+   * @param {object} [options]
+   * @param {string} [options.title]
+   * @param {boolean} [options.isContest]  Post the raw result for comparison instead of a TN verdict
+   * @param {boolean} [options.flee]       Ask how many foes; TN = 6 + foes (SHAMUS p.21)
+   * @param {number} [options.tn]          Starting TN (default 8)
+   * @param {Item} [options.weapon]        Weapon attack: sets the starting Range Band, rolls damage on a hit
+   * @returns {Promise<Roll|null>} The roll, or null if cancelled
+   */
   async rollGeneralAbility(abilityKey, options = {}) {
-    const ability = this.system.abilities.general[abilityKey];
-    if (!ability) return ui.notifications.error(`Ability "${abilityKey}" not found.`);
+    const general = this.system.abilities.general;
+    if (abilityKey && !general[abilityKey]) {
+      ui.notifications.error(`Ability "${abilityKey}" not found.`);
+      return null;
+    }
 
-    const isContest = options.isContest ?? false;
-    const currentPool = ability.value ?? 0;
-    const rollTitle = options.title || BDNDActor.formatKey(abilityKey).toUpperCase();
-    const unskilledPenalty = ability.rating === 0 ? -2 : 0;
+    const isContest     = options.isContest ?? false;
+    const isFlee        = options.flee ?? false;
+    const chooseAbility = !abilityKey;
+    const isCombat      = !chooseAbility && BDND.combatAbilities.has(abilityKey);
+    const isRanged      = !chooseAbility && BDND.rangedAttackAbilities.has(abilityKey);
+    const plainTN       = options.tn ?? 8;
+    const startBand     = (isRanged && !isContest) ? (BDND.weaponRangeBand[options.weapon?.system.range] ?? 'standard') : null;
+    const startTN       = isFlee ? 7 : startBand ? BDND.rangeBands[startBand].tn : plainTN;
+    const fixedTitle    = options.title || (abilityKey ? BDND.abilityLabel(abilityKey).toUpperCase() : 'CONTEST');
 
-    // Identify combat abilities for flanking / range-band features
-    const ALL_COMBAT_ABS    = new Set(['weapons', 'scuffling', 'firearms', 'artillery', 'traps_bombs']);
-    const isCombatAbility   = ALL_COMBAT_ABS.has(abilityKey);
+    // Ability line: a dropdown when choosing, otherwise rating/pool/cherry info
+    let abilityField;
+    if (chooseAbility) {
+      const opts = Object.entries(general)
+        .sort(([a], [b]) => BDND.abilityLabel(a).localeCompare(BDND.abilityLabel(b)))
+        .map(([key, d]) => `<option value="${key}">${BDND.abilityLabel(key)} (Rtg ${d.rating ?? 0}, Pool ${d.value ?? 0})</option>`)
+        .join('');
+      abilityField = `<div class="form-group"><label>Ability:</label><select name="abilityKey" style="width:100%;">${opts}</select></div>`;
+    } else {
+      const ab = general[abilityKey];
+      const cherry = this.items.find(i => i.type === 'cherry' && i.system.ability === abilityKey);
+      abilityField = `
+        <div class="form-group">
+          <label>Ability: <strong>${BDND.abilityLabel(abilityKey)}</strong>
+            &nbsp;Rating: <strong>${ab.rating}</strong>
+            &nbsp;Pool: <strong>${ab.value ?? 0}</strong>
+            ${ab.rating === 0 ? '<span class="bdnd-unskilled">(Unskilled −2)</span>' : ''}
+          </label>
+        </div>
+        ${cherry ? `<div class="bdnd-cherry-notice"><i class="fas fa-star"></i> Cherry: <strong>${cherry.name}</strong>
+          ${cherry.system.has_post_roll_spend ? '— Post-roll spend available (spend 2 after result for +1)' : ''}</div>` : ''}`;
+    }
 
-    // Flanking checkbox — combat attacks only, not contests
-    const flankingField = isCombatAbility && !isContest ? `
-      <div class="form-group bdnd-exploit-group">
-        <label>
-          <input type="checkbox" name="flanking" onchange="
-            const tn = this.closest('form').querySelector('[name=tn]');
-            tn.value = parseInt(tn.value) + (this.checked ? -2 : 2);
-          "/>
-          Flanking Advantage? (−2 TN, attacking from behind)
-        </label>
-      </div>` : '';
-
-    // Range band dropdown — only for ranged combat abilities, not for contests
-    const RANGED_ATTACK_ABILITIES = new Set(['firearms', 'artillery', 'traps_bombs']);
-    const isRangedAttack = RANGED_ATTACK_ABILITIES.has(abilityKey) && !isContest;
-    const rangeBandField = isRangedAttack ? `
+    const rangeBandField = startBand ? `
       <div class="form-group">
         <label>Range Band (sets TN):</label>
-        <select name="rangeBand" style="width:100%;" onchange="
-          const m={pointblank:6,standard:8,medium:10,long:12};
-          this.closest('form').querySelector('[name=tn]').value = m[this.value] ?? 8;
-        ">
-          <option value="pointblank">Point Blank / Exposed — TN 6</option>
-          <option value="standard" selected>Standard — TN 8</option>
-          <option value="medium">Medium — TN 10</option>
-          <option value="long">Long — TN 12</option>
+        <select name="rangeBand" style="width:100%;">
+          ${Object.entries(BDND.rangeBands).map(([k, b]) =>
+            `<option value="${k}" ${k === startBand ? 'selected' : ''}>${b.label} — TN ${b.tn}</option>`).join('')}
         </select>
       </div>` : '';
 
-    // Check for a Cherry on this ability
-    const cherry = this.items.find(i => i.type === 'cherry' && i.system.ability === abilityKey);
-    const cherryName = cherry?.name ?? null;
-    const hasPostRollSpend = cherry?.system.has_post_roll_spend ?? false;
-
-    // Contest mode: no TN field; otherwise pre-fill from options (e.g. Flee sets TN automatically)
-    const defaultTN = options.tn ?? 8;
-    const tnField = isContest
-      ? `<p class="bdnd-rule-note">
-           <strong>Contest:</strong> Both sides roll independently.
-           The GM compares results — higher wins. Ask your opponent to also roll their side.
-         </p>`
-      : `<div class="form-group">
-           <label>Target Number (TN):</label>
-           <input type="number" name="tn" value="${defaultTN}" min="2" max="13"/>
-         </div>`;
-
-    // Cherry reminder shown in dialog
-    const cherryBlock = cherryName ? `
-      <div class="bdnd-cherry-notice">
-        <i class="fas fa-star"></i> Cherry: <strong>${cherryName}</strong>
-        ${hasPostRollSpend ? '— Post-roll spend available (spend 2 after result for +1)' : ''}
+    const fleeField = isFlee ? `
+      <div class="form-group">
+        <label>Number of foes fleeing from (TN = 6 + foes):</label>
+        <input type="number" name="numFoes" value="1" min="1" max="10"/>
       </div>` : '';
 
+    const tnField = isContest
+      ? `<p class="bdnd-rule-note"><strong>Contest:</strong> Both sides roll independently.
+           The GM compares results — higher wins. Ask your opponent to also roll their side.</p>`
+      : `<div class="form-group"><label>Target Number (TN):</label>
+           <input type="number" name="tn" value="${startTN}" min="2" max="15"/></div>`;
+
+    const flankingField = (isCombat && !isContest) ? `
+      <div class="form-group bdnd-exploit-group">
+        <label><input type="checkbox" name="flanking"/> Flanking Advantage? (−2 TN, attacking from behind)</label>
+      </div>` : '';
+
+    const maxSpend = chooseAbility ? '' : `max="${general[abilityKey].value ?? 0}"`;
+
     const dialogResult = await DialogV2.prompt({
-      window: { title: isContest ? `Contest: ${rollTitle}` : `Test: ${rollTitle}` },
+      window: { title: isContest ? `Contest: ${fixedTitle}` : `Test: ${fixedTitle}` },
       classes: ["bdnd-dialog"],
       position: { width: 380 },
       content: `
-        <form class="bdnd-dialog">
-          <div class="form-group">
-            <label>Ability: <strong>${rollTitle}</strong>
-              &nbsp;Rating: <strong>${ability.rating}</strong>
-              &nbsp;Pool: <strong>${currentPool}</strong>
-              ${unskilledPenalty !== 0 ? '<span class="bdnd-unskilled">(Unskilled −2)</span>' : ''}
-            </label>
-          </div>
-          ${cherryBlock}
+        <div class="bdnd-dialog">
+          ${abilityField}
           ${rangeBandField}
+          ${fleeField}
           ${tnField}
           <div class="form-group">
             <label>Select Approach (adds its Rating free):</label>
-            <select name="approachKey" style="width:100%;">
-              ${this._buildApproachOptions()}
-            </select>
+            <select name="approachKey" style="width:100%;">${this._buildApproachOptions()}</select>
           </div>
           <div class="form-group">
-            <label>Spend Ability Pool Points (Max: ${currentPool}):</label>
-            <input type="number" name="spend" value="0" min="0" max="${currentPool}" autofocus/>
+            <label>Spend Ability Pool Points:</label>
+            <input type="number" name="spend" value="0" min="0" ${maxSpend} autofocus/>
           </div>
           ${flankingField}
           <div class="form-group bdnd-exploit-group">
-            <label>
-              <input type="checkbox" name="exploit"/>
-              GM Granted Exploit Point? (+2, requires pool spend)
-            </label>
+            <label><input type="checkbox" name="exploit"/> GM Granted Exploit Point? (+2, requires pool spend)</label>
           </div>
-        </form>
+        </div>
       `,
+      // Keep the TN in step with Range Band / foes / Flanking. (Inline onchange
+      // handlers are stripped from dialog content, so listeners go here.)
+      render: (event, dialog) => {
+        const root = dialog.element;
+        const tn = root.querySelector('[name=tn]');
+        if (!tn) return;
+        const recompute = () => {
+          const band = root.querySelector('[name=rangeBand]')?.value;
+          const foes = root.querySelector('[name=numFoes]');
+          let value = band ? BDND.rangeBands[band].tn : plainTN;
+          if (foes) value = 6 + Math.max(1, parseInt(foes.value) || 1);
+          if (root.querySelector('[name=flanking]')?.checked) value -= 2;
+          tn.value = value;
+        };
+        root.querySelectorAll('[name=rangeBand], [name=numFoes], [name=flanking]')
+          .forEach(el => { el.addEventListener('change', recompute); el.addEventListener('input', recompute); });
+      },
       ok: {
         label: isContest ? "Roll My Side" : "Roll Die",
         icon: isContest ? "fas fa-swords" : "fas fa-dice",
         callback: (event, button) => {
           const fd = new FormDataExtended(button.form).object;
           return {
+            abilityKey: fd.abilityKey || abilityKey,
             tn: parseInt(fd.tn) || 8,
             rangeBand: fd.rangeBand || null,
+            numFoes: isFlee ? Math.max(1, parseInt(fd.numFoes) || 1) : 0,
             flanking: !!fd.flanking,
             approachKey: fd.approachKey,
             spend: parseInt(fd.spend) || 0,
@@ -269,10 +326,26 @@ export class BDNDActor extends Actor {
       rejectClose: false
     });
 
-    if (!dialogResult) return;
+    if (!dialogResult) return null;
+
+    abilityKey = dialogResult.abilityKey;
+    const ability          = general[abilityKey];
+    const abilityLabel     = BDND.abilityLabel(abilityKey);
+    const currentPool      = ability.value ?? 0;
+    const unskilledPenalty = ability.rating === 0 ? -2 : 0;
+    const rollTitle = isFlee
+      ? `Flee! (${dialogResult.numFoes} foe${dialogResult.numFoes > 1 ? 's' : ''})`
+      : (options.title || abilityLabel.toUpperCase());
+
+    // Never spend more than the pool holds
+    if (dialogResult.spend > currentPool) {
+      ui.notifications.warn(`Only ${currentPool} points available in ${abilityLabel}. Spending ${currentPool}.`);
+      dialogResult.spend = currentPool;
+    }
+    dialogResult.spend = Math.max(0, dialogResult.spend);
 
     const selectedApproach = this.system.approaches[dialogResult.approachKey];
-    const approachMod = selectedApproach?.rating ?? 0;
+    const approachMod   = selectedApproach?.rating ?? 0;
     const approachLabel = selectedApproach?.label ?? dialogResult.approachKey;
 
     const activeConditions = this.items.filter(
@@ -302,25 +375,25 @@ export class BDNDActor extends Actor {
     }
 
     let breakdownHTML = `
-      <div class="bdnd-breakdown-row bdnd-info"><span>Ability (${rollTitle}, Rtg ${ability.rating}):</span><em>sets pool size only</em></div>
+      <div class="bdnd-breakdown-row bdnd-info"><span>Ability (${abilityLabel}, Rtg ${ability.rating}):</span><em>sets pool size only</em></div>
       <div class="bdnd-breakdown-row"><span>Approach (${approachLabel}):</span><strong>+${approachMod}</strong></div>
       <div class="bdnd-breakdown-row"><span>Pool Spent:</span><strong>+${dialogResult.spend}</strong></div>
     `;
     if (dialogResult.rangeBand) {
-      const rangeBandLabels = { pointblank: 'Point Blank / Exposed', standard: 'Standard', medium: 'Medium', long: 'Long' };
-      breakdownHTML += `<div class="bdnd-breakdown-row"><span>Range Band:</span><strong>${rangeBandLabels[dialogResult.rangeBand] ?? dialogResult.rangeBand} (TN ${dialogResult.tn})</strong></div>`;
+      breakdownHTML += `<div class="bdnd-breakdown-row"><span>Range Band:</span><strong>${BDND.rangeBands[dialogResult.rangeBand]?.label ?? dialogResult.rangeBand}</strong></div>`;
     }
+    if (isFlee) breakdownHTML += `<div class="bdnd-breakdown-row"><span>Fleeing:</span><strong>TN 6 + ${dialogResult.numFoes} foe${dialogResult.numFoes > 1 ? 's' : ''}</strong></div>`;
     if (dialogResult.flanking) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>Flanking Advantage:</span><strong>−2 TN</strong></div>`;
     if (unskilledPenalty !== 0) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Unskilled:</span><strong>−2</strong></div>`;
     if (exploitBonus !== 0)     breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>Exploit Point:</span><strong>+2</strong></div>`;
     if (conditionPenalty !== 0) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Condition (${activeConditions.length}×):</span><strong>${conditionPenalty}</strong></div>`;
 
     // Cherry reminder in chat card
-    if (cherryName) {
-      const postRollNote = hasPostRollSpend
-        ? `<div class="bdnd-cherry-card-note">★ <strong>${cherryName}:</strong> Spend 2 pool points to add +1 to this result.</div>`
-        : `<div class="bdnd-cherry-card-note">★ <strong>${cherryName}</strong> — see Cherry for special options.</div>`;
-      breakdownHTML += postRollNote;
+    const cherry = this.items.find(i => i.type === 'cherry' && i.system.ability === abilityKey);
+    if (cherry) {
+      breakdownHTML += cherry.system.has_post_roll_spend
+        ? `<div class="bdnd-cherry-card-note">★ <strong>${cherry.name}:</strong> Spend 2 pool points to add +1 to this result.</div>`
+        : `<div class="bdnd-cherry-card-note">★ <strong>${cherry.name}</strong> — see Cherry for special options.</div>`;
     }
 
     if (isContest) {
@@ -339,15 +412,14 @@ export class BDNDActor extends Actor {
         rolls: [roll]
       });
     } else {
-      const COMBAT_ABILITIES = new Set(['weapons', 'scuffling', 'firearms', 'artillery', 'traps_bombs']);
-      const RANGED_ABILITIES  = new Set(['firearms', 'artillery', 'traps_bombs']);
       await this._postRollMessage({
         title: rollTitle, roll, tn: dialogResult.tn, breakdownHTML,
-        isCombat: COMBAT_ABILITIES.has(abilityKey),
-        isRanged:  RANGED_ABILITIES.has(abilityKey),
-        weapon:    options.weapon ?? null
+        isCombat: BDND.combatAbilities.has(abilityKey),
+        isRanged: BDND.rangedAttackAbilities.has(abilityKey),
+        weapon:   options.weapon ?? null
       });
     }
+    return roll;
   }
 
   /* -------------------------------------------- */
@@ -359,6 +431,7 @@ export class BDNDActor extends Actor {
     const generalAbilities = this.system.abilities.general;
 
     const abilityOptions = Object.entries(generalAbilities)
+      .filter(([key, data]) => key === 'athletics' || (data.value ?? 0) > 0)
       .sort(([a], [b]) => {
         if (a === 'athletics') return -1;
         if (b === 'athletics') return 1;
@@ -441,7 +514,7 @@ export class BDNDActor extends Actor {
   async rollStabilityTest() {
     const approaches = this.system.approaches;
     // SHAMUS: Stability Tests use Slick, Charismatic (Flashy), Focused, Deceptive.
-    const allowedApproaches = ["slick", "flashy", "focused", "deceptive"];
+    const allowedApproaches = BDND.stabilityApproaches;
 
     let approachOptions = '';
     for (const key of allowedApproaches) {
@@ -517,7 +590,7 @@ export class BDNDActor extends Actor {
           return {
             approachKey: fd.approachKey,
             spend:       parseInt(fd.spend) || 0,
-            tn:          parseInt(fd.tn) || 5,
+            tn:          parseInt(fd.tn) || 8,
             loss:        isNaN(customLoss) ? parseInt(fd.incident) : customLoss
           };
         }
@@ -578,11 +651,6 @@ export class BDNDActor extends Actor {
       breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Stability Counter:</span><strong>+${stabilityRise} (${currentStability} → ${newStab} / ${stabilityMax})</strong></div>`;
     }
 
-    const dieResult = roll.terms[0]?.results?.[0]?.result;
-    if (dieResult === 1) {
-      breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>⚠ Complication (natural 1)</span></div>`;
-    }
-
     const newStabFinal = Math.min(stabilityMax, currentStability + stabilityRise);
     await this._postRollMessage({
       title: 'Stability Test',
@@ -594,45 +662,9 @@ export class BDNDActor extends Actor {
     });
   }
 
+  /** A Contest: a General test posting the raw result; the ability is chosen in the dialog. */
   async rollContest(options = {}) {
-    // Contest is a standard General Ability test with the same mechanics —
-    // Ability Rating + Approach Rating + Ability pool spend. The only difference
-    // is the chat card posts the raw result for GM comparison instead of a
-    // success/failure verdict against a fixed TN.
-    const general = this.system.abilities?.general ?? {};
-
-    const abilityOptions = Object.entries(general)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, data]) =>
-        `<option value="${key}">${BDNDActor.formatKey(key)} (Rtg ${data.rating ?? 0}, Pool ${data.value ?? 0})</option>`
-      ).join('');
-
-    const chosenKey = await DialogV2.prompt({
-      window: { title: options.title ?? "Contest Roll — Choose Ability" },
-      classes: ["bdnd-dialog"],
-      position: { width: 380 },
-      content: `
-        <form class="bdnd-dialog">
-          <p class="bdnd-rule-note">
-            <strong>Contest:</strong> Select the Ability governing this contest.
-            The next dialog will let you choose your Approach and spend pool points.
-          </p>
-          <div class="form-group">
-            <label>Ability:</label>
-            <select name="abilityKey" style="width:100%;">${abilityOptions}</select>
-          </div>
-        </form>
-      `,
-      ok: {
-        label: "Next →",
-        icon: "fas fa-swords",
-        callback: (event, button) => new FormDataExtended(button.form).object.abilityKey
-      },
-      rejectClose: false
-    });
-
-    if (!chosenKey) return;
-    await this.rollGeneralAbility(chosenKey, { isContest: true, title: options.title });
+    return this.rollGeneralAbility(null, { ...options, isContest: true });
   }
 
   /* -------------------------------------------- */
@@ -701,7 +733,7 @@ export class BDNDActor extends Actor {
           return {
             abilityKey: fd.abilityKey,
             approachKey: fd.approachKey,
-            tn: parseInt(fd.tn) || 5,
+            tn: parseInt(fd.tn) || 8,
             spend: parseInt(fd.spend) || 0,
             helperPoints: Math.min(20, parseInt(fd.helperPoints) || 0),
             exploit: !!fd.exploit
@@ -760,9 +792,6 @@ export class BDNDActor extends Actor {
     if (unskilledPenalty !== 0) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Unskilled:</span><strong>−2</strong></div>`;
     if (exploitBonus) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>Exploit Point:</span><strong>+2</strong></div>`;
     if (conditionPenalty) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Conditions:</span><strong>${conditionPenalty}</strong></div>`;
-
-    const dieResult = roll.terms[0]?.results?.[0]?.result;
-    if (dieResult === 1) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>⚠ Complication (natural 1)</span></div>`;
 
     await this._postRollMessage({ title, roll, tn: dialogResult.tn, breakdownHTML });
   }
@@ -836,13 +865,19 @@ export class BDNDActor extends Actor {
     // RAW: each Reassurance point spent reduces the Stability Risk Counter by 2
     const newStab         = Math.max(0, currentStab - (finalSpend * 2));
 
-    // Deduct from this actor's Reassurance pool
-    await this.update({
-      'system.abilities.investigative.reassurance.value': Math.max(0, available - finalSpend)
-    });
-
-    // Reduce the target's Stability Risk Counter
-    await targetActor.update({ 'system.stability.value': newStab });
+    // Reduce the target's Stability Risk Counter (relayed via the GM if the
+    // player doesn't own the target), then deduct this actor's pool
+    if (targetActor.id === this.id) {
+      await this.update({
+        'system.abilities.investigative.reassurance.value': Math.max(0, available - finalSpend),
+        'system.stability.value': newStab
+      });
+    } else {
+      if (!await updateActorAnywhere(targetActor, { 'system.stability.value': newStab })) return;
+      await this.update({
+        'system.abilities.investigative.reassurance.value': Math.max(0, available - finalSpend)
+      });
+    }
 
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
@@ -867,14 +902,6 @@ export class BDNDActor extends Actor {
       ui.notifications.warn(`No points remaining in ${label}.`);
       return;
     }
-
-    const confirmed = await DialogV2.confirm({
-      window: { title: "Spend Investigative Point?" },
-      content: `<p>Spend 1 point of <strong>${label.toUpperCase()}</strong> to gain a clue or benefit?</p>`,
-      rejectClose: false
-    });
-
-    if (!confirmed) return;
 
     await this.update({
       [`system.abilities.investigative.${abilityKey}.value`]: ability.value - 1
@@ -945,6 +972,10 @@ export class BDNDActor extends Actor {
         <label>Drive-related spell — spend pool points (0–2, reduces 1 for 1):</label>
         <input type="number" name="stabDriveSpend" value="0" min="0" max="2"/>
       </div>
+      <div class="form-group">
+        <label>Spend the Drive points from:</label>
+        <select name="stabDrivePool" style="width:100%;">${this._buildPoolOptions()}</select>
+      </div>
       <div class="form-group bdnd-exploit-group">
         <label>
           <input type="checkbox" name="stabComponent"/>
@@ -1008,6 +1039,7 @@ export class BDNDActor extends Actor {
               exploit:        !!fd.exploit,
               stabCeremony:   !!fd.stabCeremony,
               stabDriveSpend: parseInt(fd.stabDriveSpend) || 0,
+              stabDrivePool:  fd.stabDrivePool || null,
               stabComponent:  !!fd.stabComponent,
               stabLoreSheet:  !!fd.stabLoreSheet
             };
@@ -1041,27 +1073,25 @@ export class BDNDActor extends Actor {
       await roll.evaluate();
       const hit = roll.total >= dialogResult.tn;
 
-      // RAW: Stability damage only on success — no damage if the spell fails
-      const driveSpend    = Math.min(2, dialogResult.stabDriveSpend);
+      const newPool = Math.max(0, currentPool - totalPoolCost);
+      const updates = { 'system.abilities.general.spell_casting.value': newPool };
+
+      // RAW: Stability damage only on success — no damage if the spell fails,
+      // so the Drive spend (which only reduces that damage) is only taken on a hit
+      const drive = hit
+        ? this._applyDriveSpend(dialogResult.stabDrivePool, dialogResult.stabDriveSpend, updates)
+        : { spend: 0, label: '' };
+      const driveSpend    = drive.spend;
       const stabReduction = (dialogResult.stabCeremony  ? 2 : 0)
                           + driveSpend
                           + (dialogResult.stabComponent  ? 1 : 0)
                           + (dialogResult.stabLoreSheet  ? 1 : 0);
       const stabilityDmg  = hit ? Math.max(0, baseSta - stabReduction) : 0;
 
-      const newPool          = Math.max(0, currentPool - totalPoolCost);
       const currentStability = this.system.stability.value ?? 0;
       const stabilityMax     = this.system.stability.max   ?? 8;
       const newStability     = Math.min(stabilityMax, currentStability + stabilityDmg);
-
-      const updates = {
-        'system.abilities.general.spell_casting.value': newPool,
-        'system.stability.value': newStability
-      };
-      if (driveSpend > 0) {
-        const apPath = `system.approaches.${dialogResult.approachKey}.value`;
-        updates[apPath] = Math.max(0, (selectedApproach?.value ?? 0) - driveSpend);
-      }
+      updates['system.stability.value'] = newStability;
       await this.update(updates);
 
       let breakdownHTML = `
@@ -1081,7 +1111,7 @@ export class BDNDActor extends Actor {
           <strong>${baseSta} − ${stabReduction} = ${stabilityDmg}</strong>
         </div>`;
         if (dialogResult.stabCeremony)  breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Ceremony:</span><strong>−2</strong></div>`;
-        if (driveSpend > 0)             breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Drive spend (${driveSpend} pool):</span><strong>−${driveSpend}</strong></div>`;
+        if (driveSpend > 0)             breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Drive spend (${driveSpend} from ${drive.label}):</span><strong>−${driveSpend}</strong></div>`;
         if (dialogResult.stabComponent) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Component (${level} Coin):</span><strong>−1</strong></div>`;
         if (dialogResult.stabLoreSheet) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Lore Sheet spend:</span><strong>−1</strong></div>`;
       } else {
@@ -1126,6 +1156,7 @@ export class BDNDActor extends Actor {
             return {
               stabCeremony:   !!fd.stabCeremony,
               stabDriveSpend: parseInt(fd.stabDriveSpend) || 0,
+              stabDrivePool:  fd.stabDrivePool || null,
               stabComponent:  !!fd.stabComponent,
               stabLoreSheet:  !!fd.stabLoreSheet
             };
@@ -1136,26 +1167,26 @@ export class BDNDActor extends Actor {
 
       if (!dialogResult) return;
 
-      const driveSpend    = Math.min(2, dialogResult.stabDriveSpend);
+      const newPool = Math.max(0, currentPool - level);
+      const updates = { 'system.abilities.investigative.voodoo.value': newPool };
+
+      const drive = this._applyDriveSpend(dialogResult.stabDrivePool, dialogResult.stabDriveSpend, updates);
+      const driveSpend    = drive.spend;
       const stabReduction = (dialogResult.stabCeremony  ? 2 : 0)
                           + driveSpend
                           + (dialogResult.stabComponent  ? 1 : 0)
                           + (dialogResult.stabLoreSheet  ? 1 : 0);
       const stabilityDmg  = Math.max(0, baseSta - stabReduction);
 
-      const newPool          = Math.max(0, currentPool - level);
       const currentStability = this.system.stability.value ?? 0;
       const stabilityMax     = this.system.stability.max   ?? 8;
       const newStability     = Math.min(stabilityMax, currentStability + stabilityDmg);
-
-      await this.update({
-        'system.abilities.investigative.voodoo.value': newPool,
-        'system.stability.value': newStability
-      });
+      updates['system.stability.value'] = newStability;
+      await this.update(updates);
 
       let reductionHTML = '';
       if (dialogResult.stabCeremony)  reductionHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Ceremony:</span><strong>−2</strong></div>`;
-      if (driveSpend > 0)             reductionHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Drive spend (${driveSpend} from any pool):</span><strong>−${driveSpend}</strong></div>`;
+      if (driveSpend > 0)             reductionHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Drive spend (${driveSpend} from ${drive.label}):</span><strong>−${driveSpend}</strong></div>`;
       if (dialogResult.stabComponent) reductionHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Component (${level} Coin):</span><strong>−1</strong></div>`;
       if (dialogResult.stabLoreSheet) reductionHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>↳ Lore Sheet spend:</span><strong>−1</strong></div>`;
 
@@ -1177,7 +1208,6 @@ export class BDNDActor extends Actor {
             <div class="dice-result">
               <h3 class="bdnd-result-success">RITUAL PERFORMED SUCCESSFULLY</h3>
               <div class="tn-label">Concoction rituals always succeed — the Loa have answered.</div>
-              ${driveSpend > 0 ? `<p class="bdnd-rule-note" style="margin-top:4px;">Remember to deduct ${driveSpend} point(s) from the relevant pool for the Drive spend.</p>` : ''}
             </div>
           </div>
         `
@@ -1194,16 +1224,6 @@ export class BDNDActor extends Actor {
   /* -------------------------------------------- */
 
   async doRefreshEvent() {
-    const confirmed = await DialogV2.confirm({
-      window: { title: "Refresh Event" },
-      content: `
-        <p>This will restore <strong>all</strong> General Ability, Investigative Ability, and Approach pools to their Rating values.</p>
-        <p><em>Stability Risk Counter is not affected — it can only be reduced via Reassurance.</em></p>
-      `,
-      rejectClose: false
-    });
-    if (!confirmed) return;
-
     const updates = {};
 
     // Restore General Ability pools
@@ -1262,19 +1282,6 @@ export class BDNDActor extends Actor {
       return ui.notifications.warn(`No Build Points remaining — cannot raise ${label}.`);
     }
 
-    const confirmed = await DialogV2.confirm({
-      window: { title: `Raise ${label}?` },
-      content: `
-        <form class="bdnd-dialog">
-          <p>Spend <strong>1 Build Point</strong> to raise <strong>${label}</strong>
-             from Rating ${currentRating} to Rating ${newRating}?</p>
-          <p class="bdnd-rule-note">Build Points available: <strong>${bp}</strong></p>
-        </form>
-      `,
-      rejectClose: false
-    });
-    if (!confirmed) return;
-
     await this.update({
       'system.build_points.value': bp - 1,
       [`system.abilities.${abilityType}.${abilityKey}.rating`]: newRating
@@ -1301,39 +1308,10 @@ export class BDNDActor extends Actor {
 
   /**
    * Fleeing from an ongoing fight.
-   * Athletics test; TN = 6 + number of foes being fled from.
+   * Athletics test; TN = 6 + number of foes being fled from (asked in the dialog).
    */
   async rollFleeing() {
-    const dialogResult = await DialogV2.prompt({
-      window: { title: 'Flee!' },
-      classes: ["bdnd-dialog"],
-      position: { width: 380 },
-      content: `
-        <form class="bdnd-dialog">
-          <p class="bdnd-rule-note">
-            <strong>Fleeing (p.21):</strong> Make an Athletics test.<br>
-            TN = 6 + the number of foes you are fleeing from.
-          </p>
-          <div class="form-group">
-            <label>Number of foes fleeing from:</label>
-            <input type="number" name="numFoes" value="1" min="1" max="10" autofocus/>
-          </div>
-        </form>
-      `,
-      ok: {
-        label: 'Roll to Flee',
-        icon: "fas fa-person-running",
-        callback: (event, button) => ({ numFoes: parseInt(new FormDataExtended(button.form).object.numFoes) || 1 })
-      },
-      rejectClose: false
-    });
-    if (!dialogResult) return;
-
-    const { numFoes } = dialogResult;
-    await this.rollGeneralAbility('athletics', {
-      title: `Flee! (${numFoes} foe${numFoes > 1 ? 's' : ''})`,
-      tn:    6 + numFoes
-    });
+    return this.rollGeneralAbility('athletics', { flee: true });
   }
 
   /* -------------------------------------------- */
@@ -1347,7 +1325,7 @@ export class BDNDActor extends Actor {
    * Target: the first targeted token (if any); otherwise self.
    */
   async useMedicine() {
-    const medicine  = this.system.abilities?.general?.medicine;
+    const medicine  = this.system.abilities?.investigative?.medicine;
     if (!medicine) return ui.notifications.error(`${this.name}: no Medicine ability found.`);
     const available = medicine.value ?? 0;
     if (available <= 0) return ui.notifications.warn(`${this.name} has no Medicine pool points remaining.`);
@@ -1392,8 +1370,15 @@ export class BDNDActor extends Actor {
     const currentHP  = target.system.health?.value ?? 0;
     const newHP      = Math.max(0, currentHP - reduction);
 
-    await this.update({ 'system.abilities.general.medicine.value': Math.max(0, available - finalSpend) });
-    await target.update({ 'system.health.value': newHP });
+    if (isSelf) {
+      await this.update({
+        'system.abilities.investigative.medicine.value': Math.max(0, available - finalSpend),
+        'system.health.value': newHP
+      });
+    } else {
+      if (!await updateActorAnywhere(target, { 'system.health.value': newHP })) return;
+      await this.update({ 'system.abilities.investigative.medicine.value': Math.max(0, available - finalSpend) });
+    }
 
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),

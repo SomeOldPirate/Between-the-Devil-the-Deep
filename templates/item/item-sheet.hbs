@@ -10,11 +10,7 @@
         <div class="form-group">
             <label>Governing Ability</label>
             <select name="system.ability">
-                <option value="weapons"   {{selected system.ability "weapons"}}>Weapons (Melee)</option>
-                <option value="firearms"  {{selected system.ability "firearms"}}>Firearms (Guns)</option>
-                <option value="athletics" {{selected system.ability "athletics"}}>Athletics (Throwing)</option>
-                <option value="scuffling" {{selected system.ability "scuffling"}}>Scuffling (Unarmed)</option>
-                <option value="artillery" {{selected system.ability "artillery"}}>Artillery (Cannons)</option>
+                {{selectOptions config.weaponAbilities selected=system.ability}}
             </select>
         </div>
 
@@ -26,10 +22,7 @@
         <div class="form-group">
             <label>Range</label>
             <select name="system.range">
-                <option value="Close"        {{selected system.range "Close"}}>Close (Melee)</option>
-                <option value="Point Blank"  {{selected system.range "Point Blank"}}>Point Blank (Pistol)</option>
-                <option value="Medium"       {{selected system.range "Medium"}}>Medium</option>
-                <option value="Long"         {{selected system.range "Long"}}>Long</option>
+                {{selectOptions config.weaponRanges selected=system.range}}
             </select>
         </div>
 
@@ -43,11 +36,6 @@
         </div>
 
         <div class="form-group">
-            <label>Equipped?</label>
-            <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
-        </div>
-
-        <div class="form-group">
             <label>Weapon Notes <span class="field-hint">(special rules, qualities)</span></label>
             <input type="text" name="system.notes" value="{{system.notes}}"
                    placeholder="e.g. Reliable, Two-handed, Boarding weapon…"/>
@@ -58,8 +46,7 @@
         <div class="form-group">
             <label>Spell Type</label>
             <select name="system.spell_type">
-                <option value="casting"    {{selected system.spell_type "casting"}}>Casting Ability Spell — requires Test (TN 8), drawn from Spell Casting pool</option>
-                <option value="concoction" {{selected system.spell_type "concoction"}}>Concoction / Ritual — always succeeds, drawn from Voodoo pool</option>
+                {{selectOptions config.spellTypes selected=system.spell_type}}
             </select>
         </div>
         <div class="form-group">
@@ -94,19 +81,13 @@
         <div class="form-group">
             <label>Condition Type</label>
             <select name="system.conditionType">
-                <option value="physical" {{selected system.conditionType "physical"}}>Physical</option>
-                <option value="mental"   {{selected system.conditionType "mental"}}>Mental</option>
+                {{selectOptions config.conditionTypes selected=system.conditionType}}
             </select>
         </div>
         <div class="form-group">
             <label>Affected Approach</label>
             <select name="system.approach">
-                <option value="forceful"  {{selected system.approach "forceful"}}>Forceful</option>
-                <option value="slick"     {{selected system.approach "slick"}}>Slick</option>
-                <option value="flashy"    {{selected system.approach "flashy"}}>Flashy</option>
-                <option value="agile"     {{selected system.approach "agile"}}>Agile</option>
-                <option value="focused"   {{selected system.approach "focused"}}>Focused</option>
-                <option value="deceptive" {{selected system.approach "deceptive"}}>Deceptive</option>
+                {{selectOptions config.approaches selected=system.approach}}
             </select>
         </div>
     {{/if}}
@@ -130,25 +111,7 @@
         <div class="form-group">
             <label>Parent Ability</label>
             <select name="system.ability" style="width:100%;">
-                <option value="artillery"        {{selected system.ability "artillery"}}>Artillery</option>
-                <option value="athletics"        {{selected system.ability "athletics"}}>Athletics</option>
-                <option value="burglary"         {{selected system.ability "burglary"}}>Burglary</option>
-                <option value="business_affairs" {{selected system.ability "business_affairs"}}>Business Affairs</option>
-                <option value="disguise"         {{selected system.ability "disguise"}}>Disguise</option>
-                <option value="filch"            {{selected system.ability "filch"}}>Filch</option>
-                <option value="firearms"         {{selected system.ability "firearms"}}>Firearms</option>
-                <option value="gambling"         {{selected system.ability "gambling"}}>Gambling</option>
-                <option value="navigation"       {{selected system.ability "navigation"}}>Navigation</option>
-                <option value="riding"           {{selected system.ability "riding"}}>Riding</option>
-                <option value="scuffling"        {{selected system.ability "scuffling"}}>Scuffling</option>
-                <option value="seamanship"       {{selected system.ability "seamanship"}}>Seamanship</option>
-                <option value="sense_trouble"    {{selected system.ability "sense_trouble"}}>Sense Trouble</option>
-                <option value="spell_casting"    {{selected system.ability "spell_casting"}}>Spell Casting</option>
-                <option value="stealth"          {{selected system.ability "stealth"}}>Stealth</option>
-                <option value="swimming"         {{selected system.ability "swimming"}}>Swimming</option>
-                <option value="tinkering"        {{selected system.ability "tinkering"}}>Tinkering</option>
-                <option value="traps_bombs"      {{selected system.ability "traps_bombs"}}>Traps & Bombs</option>
-                <option value="weapons"          {{selected system.ability "weapons"}}>Weapons</option>
+                {{selectOptions config.cherryAbilities selected=system.ability}}
             </select>
         </div>
         <div class="form-group">

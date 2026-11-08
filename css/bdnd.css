@@ -247,22 +247,6 @@
 .bdnd .pip.pip-empty { background: transparent; }
 .bdnd .approach-unrated { font-size: 0.8em; color: #c2b59b; }
 
-/* Pool input — sits below pips */
-.bdnd .ledger-pool,
-.bdnd .approach-pool-input {
-  display: block;
-  width: 38px !important;
-  margin: 2px auto 0;
-  text-align: center;
-  font-size: 0.85em;
-  font-weight: bold;
-  color: #8b0000;
-  background: rgba(139,0,0,0.05) !important;
-  border: 1px dashed rgba(90,61,43,0.4) !important;
-  border-radius: 3px;
-  padding: 1px 3px;
-}
-
 /* ── Risk Counters ────────────────────────────────────────────── */
 
 .bdnd .pc-counters-row {
@@ -301,8 +285,7 @@
   align-items: center;
   gap: 2px;
 }
-.bdnd .counter-val-input,
-.bdnd .counter-max-input {
+.bdnd .counter-val-input {
   background: rgba(255,255,255,0.2) !important;
   border: none !important;
   border-bottom: 1px solid rgba(255,255,255,0.5) !important;
@@ -315,15 +298,17 @@
 }
 .bdnd .counter-sep { color: rgba(255,255,255,0.6); font-size: 0.9em; }
 
-/* Derived max shown prominently; base editable in small input beside it */
+/* Derived max shown prominently; click it to edit the base */
 .bdnd .counter-max-display {
   font-size: 1.15em;
   font-weight: bold;
   color: #f5edd8;
   min-width: 24px;
   text-align: center;
-  cursor: help;
+  cursor: pointer;
+  border-bottom: 1px dotted rgba(255,255,255,0.45);
 }
+.bdnd .counter-max-display:hover { color: #fff; border-bottom-style: solid; }
 .bdnd .counter-base-input {
   background: rgba(255,255,255,0.1) !important;
   border: none !important;
@@ -394,24 +379,6 @@
   font-family: 'IM Fell English SC', serif;
   color: #3e2b1d;
   line-height: 1;
-}
-
-/* ── Conditions Banner ────────────────────────────────────────── */
-
-.bdnd .conditions-banner {
-  background: rgba(139,0,0,0.05);
-  border: 1px solid rgba(139,0,0,0.35);
-  border-radius: 4px;
-  padding: 5px 10px;
-  margin-bottom: 8px;
-}
-.bdnd .conditions-heading {
-  font-family: 'IM Fell English SC', serif;
-  font-weight: bold;
-  color: #8b0000;
-  font-size: 0.95em;
-  display: block;
-  margin-bottom: 3px;
 }
 .bdnd .condition-counts { font-size: 0.82em; font-weight: normal; color: #5a3d2b; }
 .bdnd .condition-limit-warn { color: darkred; font-weight: bold; margin-left: 4px; }
@@ -763,44 +730,12 @@
 /* Ability tables inside stamped panels */
 .bdnd .sp .ability-table { margin-top: 4px; }
 .bdnd .sp-abilities { padding-bottom: 6px; }
-
-/* ── Advancement — Raise Rating button ──────────────────────── */
-.bdnd .raise-rating {
-  display: inline-block;
-  color: #5a8a3a;
-  font-size: 0.78em;
-  padding: 1px 4px;
-  border-radius: 3px;
-  opacity: 0.75;
-  transition: opacity 0.15s, background 0.15s;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.bdnd .raise-rating:hover {
-  opacity: 1;
-  color: #2e5a18;
-  background: rgba(90, 138, 58, 0.15);
-}
 /* keep the action column narrow */
 .bdnd .ability-table td:last-child,
 .bdnd .ability-table th:last-child {
   width: 28px;
   text-align: center;
   padding: 2px 2px;
-}
-
-/* ── Build Points display in tab toolbar ─────────────────────── */
-.bdnd .bp-display {
-  margin-left: auto;
-  font-size: 0.82em;
-  font-weight: bold;
-  color: #c9a227;
-  letter-spacing: 0.02em;
-  padding: 2px 5px;
-  border-radius: 3px;
-  background: rgba(201, 162, 39, 0.1);
-  border: 1px solid rgba(201, 162, 39, 0.25);
-  white-space: nowrap;
 }
 
 /* Trackers as stamped panels — title floats above, inner fills the frame */
@@ -975,18 +910,6 @@
 .bdnd.ship .ship-minor-input { width: 56px; text-align: center; font-size: 1.05em; font-weight: bold; }
 .bdnd.ship .booty-input { color: #b8860b; }
 
-/* Action buttons */
-.bdnd.ship button.fire-cannons,
-.bdnd.ship button.payout-btn {
-  font-family: 'IM Fell English SC', serif;
-  font-size: 0.82em;
-  padding: 2px 8px;
-  cursor: pointer;
-  border-radius: 3px;
-}
-.bdnd.ship button.fire-cannons { background: #ffe6e6; border: 1px solid #8b0000; color: #8b0000; }
-.bdnd.ship button.payout-btn   { background: #fffde6; border: 1px solid #b8860b; color: #b8860b; }
-
 /* Tracker inner — fills the sp-tracker frame */
 .bdnd.ship .tracker-inner {
   display: flex;
@@ -1029,13 +952,6 @@
 .bdnd.ship .counter-value { min-width: 60px; text-align: center; color: #f5edd8; }
 .bdnd.ship .counter-controls a { color: #f5edd8; cursor: pointer; opacity: 0.9; transition: opacity 0.12s; }
 .bdnd.ship .counter-controls a:hover { opacity: 0.65; }
-.bdnd.ship .counter-risk-roll {
-  font-size: 0.7em;
-  border: 1px solid rgba(255,255,255,0.5);
-  border-radius: 3px;
-  padding: 1px 6px;
-  font-family: 'IM Fell English SC', serif;
-}
 
 /* Lower grid — mods + log side by side */
 .bdnd.ship .ship-lower-grid {
@@ -1239,8 +1155,6 @@
   border-bottom: 1px solid #c2b59b;
 }
 
-
-
 /* ══ DIALOG THEMING ════════════════════════════════════════════════ */
 
 /* Target our DialogV2 prompts (classes: ["bdnd-dialog"]) while this system is active */
@@ -1401,8 +1315,6 @@
 }
 .bdnd-cherry-notice i { color: #b8860b; margin-right: 4px; }
 
-
-
 /* ── Cherry Items ────────────────────────────────────────────────── */
 .bdnd .cherry-list { margin-top: 4px; }
 
@@ -1476,17 +1388,6 @@
   margin-right: 4px;
 }
 
-/* NPC cherry add link (shown when no cherries exist) */
-.bdnd.npc .npc-cherry-add {
-  font-size: 0.85em;
-  padding: 2px 4px;
-  opacity: 0.7;
-}
-.bdnd.npc .npc-cherry-add:hover { opacity: 1; }
-
-/* Remove old npc-add-condition rule if any stray margin */
-.bdnd.npc .npc-add-condition { display: none; }
-
 /* ── Combat Tracker — drag-to-reorder (SHAMUS narrative initiative) ─────── */
 /* GM can drag combatant rows to set turn order; initiative values are then   */
 /* reassigned in the background to persist the sequence.                      */
@@ -1539,18 +1440,6 @@
 .bdnd .approach-cond-badge.mental {
   background: #1a3a6e;
   color: #fdf5e6;
-}
-
-/* ══ FLEE BUTTON IN TOOLBAR ═════════════════════════════════════ */
-
-.bdnd .tab-toolbar .roll-flee {
-  color: #5a3d2b;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.bdnd .tab-toolbar .roll-flee:hover {
-  color: #8b0000;
-  text-shadow: 0 0 6px rgba(139,0,0,0.4);
 }
 
 /* ══ NPC TYPE TOGGLE ════════════════════════════════════════════ */
@@ -1709,13 +1598,6 @@
   text-align: center;
   font-size: 0.9em;
 }
-.bdnd .ctr-delete {
-  color: #8c6d53;
-  cursor: pointer;
-  padding: 2px 4px;
-  transition: color 0.15s;
-}
-.bdnd .ctr-delete:hover { color: #8b0000; }
 
 /* Progress bar */
 .bdnd .ctr-bar-wrap {
@@ -1820,3 +1702,31 @@
   color: #3e2b1d;
   resize: vertical;
 }
+
+/* ══ TIDY-UP 2026-11 ════════════════════════════════════════════ */
+
+/* Approach pips are clickable: click to set the pool */
+.bdnd a.pip { cursor: pointer; transition: transform 0.1s; }
+.bdnd a.pip:hover { transform: scale(1.25); border-color: #8b0000; }
+.bdnd .ledger-pool-count {
+  display: block;
+  margin-top: 2px;
+  text-align: center;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #8b0000;
+}
+
+/* Base-max editor (replaces the max while open) */
+.bdnd .counter-base-input {
+  width: 34px !important;
+  font-size: 1em !important;
+  color: #f5edd8 !important;
+  background: rgba(255,255,255,0.25) !important;
+}
+
+/* Advance toggle in the ability toolbars */
+.bdnd .tab-toolbar a[data-action="toggleAdvance"] { margin-left: auto; color: #5a8a3a; font-weight: bold; }
+.bdnd .tab-toolbar a[data-action="toggleAdvance"].active { background: rgba(90,138,58,0.18); color: #2e5a18; }
+.bdnd .ability-table a[data-action="raiseRating"] { color: #5a8a3a; }
+.bdnd .ability-table a[data-action="raiseRating"]:hover { color: #2e5a18; }

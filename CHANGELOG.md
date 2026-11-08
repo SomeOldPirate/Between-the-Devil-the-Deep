@@ -1,5 +1,39 @@
 # BD&D System Changelog
 
+## [2.1.0] — 2026-11-08
+
+### Fixed
+
+- **Taken Out** fired from every connected client, throwing permission errors for players and posting duplicate chat cards. It now runs once, on the client that made the change.
+- **Range Band and Flanking** in the attack dialog never changed the TN (Foundry strips inline scripts from dialog text). The TN now updates live.
+- **Reassurance, Medicine on an ally and Divide Plunder** failed for players who don't own the target. These updates are now relayed through the GM (a GM must be logged in).
+- **Ship Shape** rolls now subtract the ship's Armor.
+- **Sense Trouble** read from the wrong ability group.
+- **Spell Drive spends** are deducted only on a successful cast (rituals still always pay), and you can now pick which pool pays for the Stability cost.
+- Spends can no longer exceed the available pool; Stability and Cooperation tests fall back to TN 8.
+- The Clutch button in chat warns players who don't own the character instead of failing silently.
+- Duplicate complication lines on roll cards removed.
+
+### Changed — Easier to use
+
+- **Health and Stability** show a single maximum; click it to edit the base value.
+- **Approach pips are clickable** to set the pool; the separate pool input is gone.
+- **Build Points**: an *Advance (N BP)* button appears when you have points, and raise arrows only show in that mode.
+- **Contest and Flee** are single dialogs (pick the ability / number of foes inline).
+- **Weapon attacks** start on the weapon's own Range Band; *Traps & Bombs* is now a weapon ability.
+- **Clutch Test** lists only Athletics plus abilities with points in the pool.
+- Ability names read properly ("Traps & Bombs", "Salt of the Sea").
+- *Show All Skills* no longer saves to the actor on every click.
+- **NPC weapons** show ammo, notes and a reload button; weapon notes also show on Captain sheets.
+- **Fire Broadsides** lets you pick the gunner from a list; with no gunner it rolls 2d6 vs TN 8.
+- The Medicine button moved to the Investigative tab.
+
+### Removed
+
+- Confirmation pop-ups on spending Investigative points, raising ratings, Refresh, untapping Lore Sheets and deleting counters (item delete still asks).
+- The duplicate Reassurance heart, the extra "counter maxed" chat card, per-combatant initiative buttons (coin flip stays), the weapon *Equipped* box (it did nothing), an unused migration setting, unused helpers and dead CSS.
+- The `bdnd_create_*.js` macro scripts from the repository.
+
 ## [2.0.1] — 2026-09-16
 
 ### Fixed

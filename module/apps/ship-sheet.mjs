@@ -4,6 +4,7 @@
  */
 
 import { SYSTEM_ID } from "../config.mjs";
+import { updateActorAnywhere } from "../socket.mjs";
 
 const { DialogV2, HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -175,19 +176,25 @@ export default class BDNDShipSheet extends HandlebarsApplicationMixin(ActorSheet
       modLabel = `Opponent Cannons (${finalMod >= 0 ? "+" : ""}${finalMod})`;
     }
 
-    const formula = finalMod !== 0 ? `1d6 + @mod` : `1d6`;
-    const roll = new Roll(formula, { mod: finalMod });
+    // This ship's Armor is subtracted from Ship Shape rolls against it
+    const armor = isShipShape ? Math.max(0, this.actor.system.armor ?? 0) : 0;
+
+    const formula = ["1d6", finalMod !== 0 ? "@mod" : null, armor ? "@armor" : null]
+      .filter(Boolean).join(" + ").replace("+ @armor", "- @armor");
+    const roll = new Roll(formula, { mod: finalMod, armor });
     await roll.evaluate();
+    const advance = Math.max(0, roll.total);
 
     const current  = foundry.utils.getProperty(this.actor, path) ?? 0;
     const maxPath  = path.replace(".value", ".max");
     const max      = foundry.utils.getProperty(this.actor, maxPath) ?? 999;
-    const newValue = Math.min(max, current + roll.total);
+    const newValue = Math.min(max, current + advance);
 
     await this.actor.update({ [path]: newValue });
 
-    let breakdownHTML = `<div class="bdnd-breakdown-row"><span>Dice Roll:</span><strong>${roll.total}</strong></div>`;
+    let breakdownHTML = `<div class="bdnd-breakdown-row"><span>Dice Roll:</span><strong>${advance}</strong></div>`;
     if (modLabel) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-bonus"><span>${modLabel}:</span><strong>included above</strong></div>`;
+    if (armor) breakdownHTML += `<div class="bdnd-breakdown-row bdnd-malus"><span>Armor (−${armor}):</span><strong>included above</strong></div>`;
     breakdownHTML += `<div class="bdnd-breakdown-row"><span>Counter:</span><strong>${current} → ${newValue} / ${max}</strong></div>`;
 
     // List any thresholds crossed so GM knows which effects to apply
@@ -222,80 +229,78 @@ export default class BDNDShipSheet extends HandlebarsApplicationMixin(ActorSheet
   }
 
   /**
-   * Fire Broadsides — Artillery ability test per SHAMUS rules (p.58–62).
-   * The number of cannons may influence the GM's damage ruling but the
-   * resolution is a single 1d6 + Approach + Spend roll.
+   * Fire Broadsides — an Artillery test (SHAMUS p.58–62). The gunner is
+   * picked from the crew this user controls (defaulting to the actor named in
+   * the Captain field); their own Artillery test dialog then takes over.
+   * With no gunner, a plain 2d6 + modifier roll is made instead.
    */
   static async #onFireCannons() {
     if (!this.isEditable) return;
     const cannons = this.actor.system.cannons.current ?? 0;
     if (cannons <= 0) return ui.notifications.warn("This ship has no cannons!");
+    const cannonText = `${cannons} cannon${cannons !== 1 ? "s" : ""}`;
 
-    // We need a reference to the captain's actor to roll their Artillery ability.
-    // If no linked actor found, fall back to a plain 1d6 roll with a note.
-    const captainName = this.actor.system.captain;
-    const captainActor = game.actors.find(a => a.name === captainName && a.type === "character");
+    const crew = game.actors
+      .filter(a => ["character", "npc"].includes(a.type) && a.isOwner)
+      .sort((a, b) => (b.system.abilities.general.artillery.rating - a.system.abilities.general.artillery.rating) || a.name.localeCompare(b.name));
+    const captainName = this.actor.system.captain?.trim();
+    const defaultId = crew.find(a => a.name === captainName)?.id ?? crew[0]?.id ?? "";
+    const gunnerOptions = crew.map(a => {
+      const art = a.system.abilities.general.artillery;
+      return `<option value="${a.id}" ${a.id === defaultId ? "selected" : ""}>${a.name} (Artillery Rtg ${art.rating}, Pool ${art.value})</option>`;
+    }).join("");
 
-    if (captainActor && captainActor.system.abilities?.general?.artillery) {
-      // Delegate to the captain's rollGeneralAbility for a proper SHAMUS test
-      ui.notifications.info(`Rolling Artillery for ${captainActor.name}…`);
-      return captainActor.rollGeneralAbility("artillery", {
-        title: `Broadside (${cannons} cannon${cannons !== 1 ? "s" : ""})`
-      });
-    }
-
-    // Fallback: plain dialog with no ability tracking
-    const dialogResult = await DialogV2.prompt({
-      window: { title: "Fire Broadsides" },
+    const choice = await DialogV2.prompt({
+      window: { title: `Fire Broadsides (${cannonText})` },
       classes: ["bdnd-dialog"],
       position: { width: 380 },
       content: `
-        <form class="bdnd-dialog">
-          <p class="bdnd-rule-note">Artillery test: 1d6 + Approach + Spend vs GM-set TN.<br>
-          <em>Tip: link a Captain actor to enable full ability tracking.</em></p>
+        <div class="bdnd-dialog">
           <div class="form-group">
-            <label>Target Number (TN):</label>
-            <input type="number" name="tn" value="5" min="2" max="10" autofocus/>
+            <label>Gunner:</label>
+            <select name="gunner" style="width:100%;">
+              ${gunnerOptions}
+              <option value="">No gunner — plain roll</option>
+            </select>
           </div>
-          <div class="form-group">
-            <label>Modifier (Approach + Spend combined):</label>
-            <input type="number" name="mod" value="0" min="-5" max="20"/>
-          </div>
-        </form>
+          <p class="bdnd-rule-note">The gunner makes an Artillery test. With no gunner,
+            enter TN and modifier below for a plain 2d6 roll.</p>
+          <div class="form-group"><label>TN (plain roll only):</label>
+            <input type="number" name="tn" value="8" min="2" max="15"/></div>
+          <div class="form-group"><label>Modifier (plain roll only):</label>
+            <input type="number" name="mod" value="0" min="-5" max="20"/></div>
+        </div>
       `,
       ok: {
-        label: `Fire! (${cannons} cannon${cannons !== 1 ? "s" : ""})`,
+        label: "Fire!",
         icon: "fas fa-fire",
         callback: (ev, button) => {
           const fd = new FormDataExtended(button.form).object;
-          return { tn: parseInt(fd.tn) || 5, mod: parseInt(fd.mod) || 0 };
+          return { gunner: fd.gunner || null, tn: parseInt(fd.tn) || 8, mod: parseInt(fd.mod) || 0 };
         }
       },
       rejectClose: false
     });
+    if (!choice) return;
 
-    if (!dialogResult) return;
+    const gunner = choice.gunner ? game.actors.get(choice.gunner) : null;
+    if (gunner) return gunner.rollGeneralAbility("artillery", { title: `Broadside (${cannonText})` });
 
-    const roll = new Roll("1d6 + @mod", { mod: dialogResult.mod });
+    const roll = new Roll("2d6 + @mod", { mod: choice.mod });
     await roll.evaluate();
-
-    const isSuccess = roll.total >= dialogResult.tn;
-    const resultSpan = isSuccess
-      ? `<span class="bdnd-result-success">HIT — Apply Damage</span>`
-      : `<span class="bdnd-result-failure">MISS</span>`;
-
+    const isSuccess = roll.total >= choice.tn;
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this.actor }),
       content: `
         <div class="bdnd-roll bdnd-broadside">
-          <h2><i class="fas fa-fire"></i> Broadside! (${cannons} cannon${cannons !== 1 ? "s" : ""})</h2>
+          <h2><i class="fas fa-fire"></i> Broadside! (${cannonText})</h2>
           <div class="roll-details">
-            <div class="bdnd-breakdown-row"><span>Modifier:</span><strong>${dialogResult.mod >= 0 ? "+" : ""}${dialogResult.mod}</strong></div>
+            <div class="bdnd-breakdown-row"><span>Modifier:</span><strong>${choice.mod >= 0 ? "+" : ""}${choice.mod}</strong></div>
           </div>
           <div class="dice-result">
             <h3>Result: ${roll.total}</h3>
-            <div class="tn-label">(TN: ${dialogResult.tn})</div>
-            ${resultSpan}
+            <div class="tn-label">(TN: ${choice.tn})</div>
+            ${isSuccess ? `<span class="bdnd-result-success">HIT — Apply Damage</span>` : `<span class="bdnd-result-failure">MISS</span>`}
           </div>
         </div>
       `,
@@ -371,8 +376,9 @@ export default class BDNDShipSheet extends HandlebarsApplicationMixin(ActorSheet
 
     if (!confirmed) return;
 
+    // Players can't update other players' captains directly — relay via the GM
     for (const pc of players) {
-      await pc.update({ "system.coin.value": (pc.system.coin.value ?? 0) + share });
+      await updateActorAnywhere(pc, { "system.coin.value": (pc.system.coin.value ?? 0) + share });
     }
     await this.actor.update({ "system.booty.value": leftOver });
     ui.notifications.info(`Plunder divided — ${share} coin given to each of ${players.length} PCs.`);

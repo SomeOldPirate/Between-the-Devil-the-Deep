@@ -5,7 +5,7 @@
       {{#if showAllAbilities}}Hide Unrated{{else}}Show All Skills{{/if}}
     </a>
     <a data-action="loreRefreshAll"><i class="fas fa-undo"></i> Untap All Lore Sheets</a>
-    <span class="bp-display" title="Build Points available for advancement">BP: {{system.build_points.value}}</span>
+    {{#if bp}}<a data-action="toggleAdvance" class="{{#if advancing}}active{{/if}}" title="Spend Build Points to raise ability Ratings"><i class="fas fa-arrow-up"></i> {{#if advancing}}Done Advancing{{else}}Advance ({{bp}} BP){{/if}}</a>{{/if}}
   </div>
 
   {{#if (eq investigativeAbilities.length 0)}}
@@ -21,12 +21,12 @@
       <tbody>
         {{#each investigativeAbilities as |ability|}}
         <tr>
-          <td><a data-action="spendInvestigative" data-key="{{ability.key}}" class="ability-roll-label">{{ability.label}}</a></td>
+          <td><a data-action="spendInvestigative" data-key="{{ability.key}}" class="ability-roll-label" title="{{#if (eq ability.key "reassurance")}}Spend Reassurance on a captain's Stability{{else}}Spend 1 point{{/if}}">{{ability.label}}</a></td>
           <td><input type="number" name="system.abilities.investigative.{{ability.key}}.rating" value="{{ability.rating}}"/></td>
           <td><input type="number" name="system.abilities.investigative.{{ability.key}}.value"  value="{{ability.value}}" class="pool-input"/></td>
           <td>
-            {{#if (eq ability.key "reassurance")}}<a data-action="spendReassurance" title="Spend Reassurance to reduce a character's Stability Counter"><i class="fas fa-heart"></i></a>{{/if}}
-            {{#if ../system.build_points.value}}<a data-action="raiseRating" data-type="investigative" data-key="{{ability.key}}" title="Spend 1 Build Point to raise {{ability.label}} Rating"><i class="fas fa-arrow-up"></i></a>{{/if}}
+            {{#if (eq ability.key "medicine")}}<a data-action="useMedicine" title="Use Medicine — target a token to treat an ally (1pt heals 3 Health Counter), or no target to treat yourself (1pt heals 1) — SHAMUS p.21"><i class="fas fa-kit-medical"></i></a>{{/if}}
+            {{#if @root.advancing}}<a data-action="raiseRating" data-type="investigative" data-key="{{ability.key}}" title="Spend 1 Build Point to raise {{ability.label}} Rating"><i class="fas fa-arrow-up"></i></a>{{/if}}
           </td>
         </tr>
         {{/each}}

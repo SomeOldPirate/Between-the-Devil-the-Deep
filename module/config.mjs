@@ -46,6 +46,25 @@ BDND.investigativeAbilities = [
   "salt_of_the_sea", "sense_lies", "ship_building", "streetwise", "theology", "voodoo"
 ];
 
+/** Words kept lower-case inside ability names ("Salt of the Sea"). */
+const SMALL_WORDS = new Set(["of", "the", "and"]);
+
+/** Labels that can't be derived from the key alone. */
+const LABEL_OVERRIDES = { traps_bombs: "Traps & Bombs" };
+
+/**
+ * Human-readable label for an ability (or any snake_case) key.
+ * @param {string} key
+ * @returns {string}
+ */
+BDND.abilityLabel = key => {
+  if (!key) return "—";
+  if (LABEL_OVERRIDES[key]) return LABEL_OVERRIDES[key];
+  return key.split("_")
+    .map((w, i) => (i > 0 && SMALL_WORDS.has(w)) ? w : w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+};
+
 /** General Abilities that represent a combat attack roll. */
 BDND.combatAbilities = new Set(["weapons", "scuffling", "firearms", "artillery", "traps_bombs"]);
 
@@ -56,24 +75,14 @@ BDND.rangedAttackAbilities = new Set(["firearms", "artillery", "traps_bombs"]);
 /*  Items                                       */
 /* -------------------------------------------- */
 
-BDND.itemTypes = {
-  item: "Item",
-  lore_sheet: "Lore Sheet",
-  weapon: "Weapon",
-  condition: "Condition",
-  armor: "Armor",
-  spell: "Spell / Ritual",
-  drive: "Drive",
-  cherry: "Cherry"
-};
-
 /** Governing Ability options offered on the weapon item sheet. */
 BDND.weaponAbilities = {
   weapons: "Weapons (Melee)",
   firearms: "Firearms (Guns)",
   athletics: "Athletics (Throwing)",
   scuffling: "Scuffling (Unarmed)",
-  artillery: "Artillery (Cannons)"
+  artillery: "Artillery (Cannons)",
+  traps_bombs: "Traps & Bombs"
 };
 
 /** Range options offered on the weapon item sheet. */
@@ -82,6 +91,13 @@ BDND.weaponRanges = {
   "Point Blank": "Point Blank (Pistol)",
   Medium: "Medium",
   Long: "Long"
+};
+
+/** The attack-dialog Range Band a weapon's Range starts on (melee weapons have none). */
+BDND.weaponRangeBand = {
+  "Point Blank": "pointblank",
+  Medium: "medium",
+  Long: "long"
 };
 
 /** Spell "type" options offered on the spell item sheet. */
@@ -98,30 +114,11 @@ BDND.conditionTypes = {
 
 /**
  * Parent Ability options offered on the cherry item sheet.
- * NOTE: preserves the original (v1.3.3) list verbatim, which omits a few
- * General Abilities (e.g. "politics") present elsewhere in the system.
+ * NOTE: preserves the original (v1.3.3) list, which omits Politics.
  */
-BDND.cherryAbilities = {
-  artillery: "Artillery",
-  athletics: "Athletics",
-  burglary: "Burglary",
-  business_affairs: "Business Affairs",
-  disguise: "Disguise",
-  filch: "Filch",
-  firearms: "Firearms",
-  gambling: "Gambling",
-  navigation: "Navigation",
-  riding: "Riding",
-  scuffling: "Scuffling",
-  seamanship: "Seamanship",
-  sense_trouble: "Sense Trouble",
-  spell_casting: "Spell Casting",
-  stealth: "Stealth",
-  swimming: "Swimming",
-  tinkering: "Tinkering",
-  traps_bombs: "Traps & Bombs",
-  weapons: "Weapons"
-};
+BDND.cherryAbilities = Object.fromEntries(
+  BDND.generalAbilities.filter(k => k !== "politics").map(k => [k, BDND.abilityLabel(k)])
+);
 
 /* -------------------------------------------- */
 /*  Range bands (General Ability test dialog)   */
@@ -133,12 +130,5 @@ BDND.rangeBands = {
   medium: { label: "Medium", tn: 10 },
   long: { label: "Long", tn: 12 }
 };
-
-/* -------------------------------------------- */
-/*  NPC type                                    */
-/* -------------------------------------------- */
-
-/** Regular NPCs are Taken Out at max Health with no Conditions track; Named NPCs get full parity. */
-BDND.npcTypes = { named: "Named", regular: "Regular" };
 
 export default BDND;

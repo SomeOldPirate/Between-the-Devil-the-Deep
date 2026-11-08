@@ -16,11 +16,11 @@
     <li class="item flexrow" data-item-id="{{item._id}}">
       <h4 class="item-name">
         <a data-action="rollWeaponAttack">{{item.name}}</a>
-        <span class="weapon-meta">+{{item.system.bonus}} dmg · {{item.system.range}}{{#if item.system.ammo.max}} · {{item.system.ammo.value}}/{{item.system.ammo.max}} ammo{{/if}}</span>
+        <span class="weapon-meta">+{{item.system.bonus}} dmg · {{item.system.range}}{{#if item.system.ammo.max}} · {{item.system.ammo.value}}/{{item.system.ammo.max}} ammo{{/if}}{{#if item.system.notes}} · {{item.system.notes}}{{/if}}</span>
       </h4>
       <div class="item-controls">
         <a data-action="rollDamage" title="Roll Damage"><i class="fas fa-dice-d6"></i></a>
-        <a data-action="reloadWeapon" title="Reload"><i class="fas fa-redo"></i></a>
+        {{#if item.system.ammo.max}}<a data-action="reloadWeapon" title="Reload"><i class="fas fa-redo"></i></a>{{/if}}
         <a data-action="itemEdit"><i class="fas fa-edit"></i></a>
         <a data-action="itemDelete"><i class="fas fa-trash"></i></a>
       </div>

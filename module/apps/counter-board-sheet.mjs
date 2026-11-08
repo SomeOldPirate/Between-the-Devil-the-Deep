@@ -11,13 +11,14 @@
  *  −1d6        PC Reduction — successful PC action lowers the counter
  *  Delete      Remove the counter from the board
  *
- * When a counter reaches its maximum a chat alert is posted automatically.
+ * Stepping a counter to its maximum by ±1 posts a chat alert; a 1d6 roll's
+ * own chat card already marks MAX.
  * @module bdnd/apps/counter-board-sheet
  */
 
 import { SYSTEM_ID } from "../config.mjs";
 
-const { DialogV2, HandlebarsApplicationMixin } = foundry.applications.api;
+const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
 
 /**
@@ -162,20 +163,11 @@ export default class BDNDCounterBoardSheet extends HandlebarsApplicationMixin(Ac
         </div>
       `
     });
-
-    if (hitMax) await this.#postMaxAlert(c);
   }
 
   async #deleteCounter(id) {
     const counters = this.#getCounters();
-    const c = counters.find(x => x.id === id);
-    if (!c) return;
-    const ok = await DialogV2.confirm({
-      window: { title: "Remove Counter" },
-      content: `<p>Remove <strong>${c.name}</strong> from this board?</p>`,
-      rejectClose: false
-    });
-    if (!ok) return;
+    if (!counters.some(x => x.id === id)) return;
     await this.#saveCounters(counters.filter(x => x.id !== id));
   }
 

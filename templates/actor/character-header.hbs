@@ -40,16 +40,16 @@
         <input type="number" name="system.approaches.{{approach.key}}.rating"
                value="{{approach.rating}}" class="ledger-rtg-input"/>
       </div>
-      <div class="approach-pips" title="Pool: {{approach.pool}} / {{approach.rating}}">
+      <div class="approach-pips" title="Pool: {{approach.pool}} / {{approach.rating}} — click a pip to set the pool">
         {{#each approach.pips as |pip|}}
-          <span class="pip {{#if pip.full}}pip-full{{else}}pip-empty{{/if}}"></span>
+          <a class="pip {{#if pip.full}}pip-full{{else}}pip-empty{{/if}}" data-action="setPool"
+             data-key="{{approach.key}}" data-index="{{pip.index}}"></a>
         {{/each}}
         {{#if (eq approach.rating 0)}}
           <span class="approach-unrated">—</span>
         {{/if}}
       </div>
-      <input type="number" name="system.approaches.{{approach.key}}.value"
-             value="{{approach.pool}}" class="approach-pool-input ledger-pool"/>
+      {{#if approach.rating}}<span class="ledger-pool-count">{{approach.pool}} / {{approach.rating}}</span>{{/if}}
     </div>
     {{/each}}
   </div>
@@ -64,8 +64,12 @@
       <span class="pc-counter-nums">
         <input type="number" name="system.health.value" value="{{system.health.value}}" class="counter-val-input"/>
         <span class="counter-sep">/</span>
-        <span class="counter-max-display" title="Base: {{system.health.base}} + Cherry bonuses">{{system.health.max}}</span>
-        <input type="number" name="system.health.base" value="{{system.health.base}}" class="counter-base-input" title="Edit base max"/>
+        {{#if (eq editingBase "health")}}
+          <input type="number" name="system.health.base" value="{{system.health.base}}" class="counter-base-input" title="Base max (before Cherry bonuses)"/>
+        {{else}}
+          <a class="counter-max-display" data-action="editBase" data-counter="health"
+             title="Max {{system.health.max}} = base {{system.health.base}} + Cherry bonuses. Click to edit the base.">{{system.health.max}}</a>
+        {{/if}}
       </span>
     </div>
     <div class="pc-counter-bar-wrap">
@@ -81,8 +85,12 @@
       <span class="pc-counter-nums">
         <input type="number" name="system.stability.value" value="{{system.stability.value}}" class="counter-val-input"/>
         <span class="counter-sep">/</span>
-        <span class="counter-max-display" title="Base: {{system.stability.base}} + Cherry bonuses">{{system.stability.max}}</span>
-        <input type="number" name="system.stability.base" value="{{system.stability.base}}" class="counter-base-input" title="Edit base max"/>
+        {{#if (eq editingBase "stability")}}
+          <input type="number" name="system.stability.base" value="{{system.stability.base}}" class="counter-base-input" title="Base max (before Cherry bonuses)"/>
+        {{else}}
+          <a class="counter-max-display" data-action="editBase" data-counter="stability"
+             title="Max {{system.stability.max}} = base {{system.stability.base}} + Cherry bonuses. Click to edit the base.">{{system.stability.max}}</a>
+        {{/if}}
       </span>
     </div>
     <div class="pc-counter-bar-wrap">
